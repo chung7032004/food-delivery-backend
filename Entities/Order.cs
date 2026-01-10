@@ -1,0 +1,22 @@
+namespace FoodDelivery.Entities
+{
+    public class Order
+    {
+        public Guid Id {get; set;} = Guid.NewGuid();
+        public Guid CustomerId {get; set;} 
+        public User Customer {get; set;} = null!;
+        public Guid AddressId {get; set;}
+        public Address Address {get; set;} = null!;
+        public decimal TotalAmount {get; set;}
+        public decimal ShippingFee {get; set;}
+        public string Note {get; set;} = null!;
+        public DateTime CreatedAt{get; set;}
+        public DateTime UpdatedAt {get; set;}
+        public virtual Review Review {get; set;} = null!; 
+        public virtual OrderDetail OrderDetail {get; set;} = null!; 
+        public virtual ICollection<OrderItem> OrderItems {get; set;} = new List<OrderItem>();
+        public virtual ICollection<OrderStatusHistory> OrderStatusHistories {get; set;} = new List<OrderStatusHistory>();
+        
+
+    }
+}

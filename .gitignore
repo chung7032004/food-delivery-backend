@@ -1,0 +1,19 @@
+# .NET
+bin/
+obj/
+.vs/
+
+# User-specific files
+*.user
+*.suo
+
+# App settings
+appsettings.json
+.env
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
