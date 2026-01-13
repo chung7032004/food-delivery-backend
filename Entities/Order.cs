@@ -7,6 +7,10 @@ namespace FoodDelivery.Entities
         public User Customer {get; set;} = null!;
         public Guid AddressId {get; set;}
         public Address Address {get; set;} = null!;
+        public string OrderCode { get; set; } = string.Empty;
+        public string ShippingAddress {get; set;} = string.Empty;
+        public string ReceiverName {get; set;} = string.Empty;
+        public string ReceiverPhone {get; set;} = string.Empty;
         public decimal TotalAmount {get; set;}
         public decimal ShippingFee {get; set;}
         public string Note {get; set;} = null!;

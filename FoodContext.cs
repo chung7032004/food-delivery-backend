@@ -50,6 +50,9 @@ public class FoodContext : DbContext
             .WithMany(u=>u.Reviews)
             .HasForeignKey(r=>r.CustomerId);
         modelBuilder.Entity<Order>()
+            .HasIndex(o => o.OrderCode)
+            .IsUnique();
+        modelBuilder.Entity<Order>()
             .HasOne(o=>o.Review)
             .WithOne(r=>r.Order)
             .HasForeignKey<Review>(r=>r.OrderId);
@@ -93,7 +96,6 @@ public class FoodContext : DbContext
             .HasOne(p=>p.Category)
             .WithMany(c=>c.Products)
             .HasForeignKey(p=>p.CategoryId);
-        
 
 
         modelBuilder.Entity<OrderDetail>(entity =>
