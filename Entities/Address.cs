@@ -8,9 +8,10 @@ namespace FoodDelivery.Entities
         public string FullAddress {get; set;} = string.Empty;
         public string Label {get; set;} = string.Empty;
         public bool IsDefault {get; set;} 
-        public decimal Latitude {get; set;}
-        public decimal Longitude {get; set;}
+        public double Latitude {get; set;}
+        public double Longitude {get; set;}
         public virtual ICollection<Order> Orders {get; set;} = new List<Order>();
-        
+        public DateTime CreatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
     }
 }
