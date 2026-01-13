@@ -1,21 +1,73 @@
-
 using FoodDelivery.Repositories;
 using FoodDelivery.Repositories.Implementations;
 using FoodDelivery.Repositories.Interfaces;
 using FoodDelivery.Service.Implementations;
+using FoodDelivery.Service.Implements;
 using FoodDelivery.Service.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+/*using System.Security.Cryptography;
+using System.Text;
+
+var password = "12345678";
+
+using var hmac = new HMACSHA512();
+var salt = hmac.Key;
+var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(password));
+
+Console.WriteLine("Salt (Base64):");
+Console.WriteLine(Convert.ToBase64String(salt));
+
+Console.WriteLine("Hash (Base64):");
+Console.WriteLine(Convert.ToBase64String(hash));
+
+return; // chặn app chạy tiếp
+*/
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
+
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    {
+        Title = "FoodDelivery API",
+        Version = "v1"
+    });
+
+    c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Description = "Nhập: Bearer {your JWT token}"
+    });
+
+    c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    {
+        {
+            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                {
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
+
 
 //Cấu hình kết nối Database Postgresql
 var configuration = builder.Configuration;
@@ -61,6 +113,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
     };
 });
 
+builder.Services.AddScoped<IProductService, ProductService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -79,3 +133,4 @@ app.UseAuthorization();// Kiểm tra bạn có quyền truy cập gì
 app.MapControllers();// Kết nối các đường dẫn (Route) tới Controller
 
 app.Run();
+
