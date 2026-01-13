@@ -1,0 +1,14 @@
+using FoodDelivery.DTOs.Product;    
+namespace FoodDelivery.Service.Implements
+{
+    public interface IProductService
+    {
+        Task<IEnumerable<ProductResponeDto>> GetAllProductsAsync();
+        Task<IEnumerable<ProductResponeDto>> GetFeaturedProductsAsync();
+        Task<ProductResponeDto?> GetProductByIdAsync(Guid productId);
+        Task<ProductResponeDto> CreateProductAsync(ProductCreateDto productCreateDto);
+        Task<bool> UpdateProductAsync(Guid productId, ProductUpdateDto productUpdateDto);
+        Task<bool> ToggleProductAvailabilityAsync(Guid productId);
+        Task<bool> DeleteProductAsync(Guid productId);
+    }
+}
