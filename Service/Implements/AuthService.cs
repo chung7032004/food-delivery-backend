@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using FoodDelivery.Common;
+using FoodDelivery.DTOs;
 using FoodDelivery.Entities;
 using FoodDelivery.Repositories;
 using FoodDelivery.Repositories.Interfaces;

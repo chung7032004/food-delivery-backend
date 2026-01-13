@@ -7,6 +7,8 @@ namespace FoodDelivery.Entities
         public Guid Id { get; set;} = Guid.NewGuid();
         public string FullName {get; set;} = string.Empty;
         public string Email {get; set;} = string.Empty;
+        public string Phone {get; set;} = string.Empty;
+        public string AvatarUrl { get; set; } = string.Empty;
         public byte[] PasswordHash {get; set;} = Array.Empty<byte>();
         public byte[] PasswordSalt {get; set;} = Array.Empty<byte>();
         public bool IsActive {get; set;} = true;

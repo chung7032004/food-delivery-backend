@@ -1,4 +1,5 @@
 using FoodDelivery.Common;
+using FoodDelivery.DTOs;
 
 namespace FoodDelivery.Service.Interfaces
 {
