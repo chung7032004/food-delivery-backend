@@ -1,0 +1,4 @@
+namespace FoodDelivery.Repositories.Interfaces
+{
+    
+}

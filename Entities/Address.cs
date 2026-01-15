@@ -10,7 +10,6 @@ namespace FoodDelivery.Entities
         public bool IsDefault {get; set;} 
         public double Latitude {get; set;}
         public double Longitude {get; set;}
-        public virtual ICollection<Order> Orders {get; set;} = new List<Order>();
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
     }
