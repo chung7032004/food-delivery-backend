@@ -18,6 +18,12 @@ public class FoodContext : DbContext
     public DbSet<Role> Roles{get;set;}
     public DbSet<User> Users{get;set;}
     public DbSet<UserRole> UserRoles{get;set;}
+    public override async Task<int> SaveChangesAsync(
+        CancellationToken cancellationToken = default)
+    {
+        // (OPTIONAL) logic custom
+        return await base.SaveChangesAsync(cancellationToken);
+    }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
