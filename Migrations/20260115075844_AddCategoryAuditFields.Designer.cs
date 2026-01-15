@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -10,9 +11,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FoodDelivery.Migrations
 {
     [DbContext(typeof(FoodContext))]
-    partial class FoodContextModelSnapshot : ModelSnapshot
+    [Migration("20260115075844_AddCategoryAuditFields")]
+    partial class AddCategoryAuditFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -149,6 +152,9 @@ namespace FoodDelivery.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("AddressId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -156,6 +162,7 @@ namespace FoodDelivery.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("Note")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("OrderCode")
@@ -180,7 +187,12 @@ namespace FoodDelivery.Migrations
                     b.Property<decimal>("TotalAmount")
                         .HasColumnType("numeric");
 
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("AddressId");
 
                     b.HasIndex("CustomerId");
 
@@ -249,14 +261,6 @@ namespace FoodDelivery.Migrations
                     b.Property<Guid>("ProductId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("ProductImage")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("ProductName")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<int>("Quantity")
                         .HasColumnType("integer");
 
@@ -266,6 +270,8 @@ namespace FoodDelivery.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("OrderId");
+
+                    b.HasIndex("ProductId");
 
                     b.ToTable("OrderItems");
                 });
@@ -384,6 +390,7 @@ namespace FoodDelivery.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("Comment")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
@@ -392,10 +399,7 @@ namespace FoodDelivery.Migrations
                     b.Property<Guid>("CustomerId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("OrderItemId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("ProductId")
+                    b.Property<Guid>("OrderId")
                         .HasColumnType("uuid");
 
                     b.Property<int>("Rating")
@@ -405,10 +409,8 @@ namespace FoodDelivery.Migrations
 
                     b.HasIndex("CustomerId");
 
-                    b.HasIndex("OrderItemId")
+                    b.HasIndex("OrderId")
                         .IsUnique();
-
-                    b.HasIndex("ProductId");
 
                     b.ToTable("Reviews");
                 });
@@ -536,11 +538,19 @@ namespace FoodDelivery.Migrations
 
             modelBuilder.Entity("FoodDelivery.Entities.Order", b =>
                 {
+                    b.HasOne("FoodDelivery.Entities.Address", "Address")
+                        .WithMany("Orders")
+                        .HasForeignKey("AddressId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("FoodDelivery.Entities.User", "Customer")
                         .WithMany("Orders")
                         .HasForeignKey("CustomerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Address");
 
                     b.Navigation("Customer");
                 });
@@ -578,7 +588,15 @@ namespace FoodDelivery.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("FoodDelivery.Entities.Product", "Product")
+                        .WithMany("OrderItems")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Order");
+
+                    b.Navigation("Product");
                 });
 
             modelBuilder.Entity("FoodDelivery.Entities.OrderStatusHistory", b =>
@@ -630,23 +648,15 @@ namespace FoodDelivery.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("FoodDelivery.Entities.OrderItem", "OrderItem")
+                    b.HasOne("FoodDelivery.Entities.Order", "Order")
                         .WithOne("Review")
-                        .HasForeignKey("FoodDelivery.Entities.Review", "OrderItemId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("FoodDelivery.Entities.Product", "Product")
-                        .WithMany("Reviews")
-                        .HasForeignKey("ProductId")
+                        .HasForeignKey("FoodDelivery.Entities.Review", "OrderId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Customer");
 
-                    b.Navigation("OrderItem");
-
-                    b.Navigation("Product");
+                    b.Navigation("Order");
                 });
 
             modelBuilder.Entity("FoodDelivery.Entities.UserRole", b =>
@@ -668,6 +678,11 @@ namespace FoodDelivery.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("FoodDelivery.Entities.Address", b =>
+                {
+                    b.Navigation("Orders");
+                });
+
             modelBuilder.Entity("FoodDelivery.Entities.Cart", b =>
                 {
                     b.Navigation("CartItems");
@@ -686,10 +701,7 @@ namespace FoodDelivery.Migrations
                     b.Navigation("OrderItems");
 
                     b.Navigation("OrderStatusHistories");
-                });
 
-            modelBuilder.Entity("FoodDelivery.Entities.OrderItem", b =>
-                {
                     b.Navigation("Review")
                         .IsRequired();
                 });
@@ -698,7 +710,7 @@ namespace FoodDelivery.Migrations
                 {
                     b.Navigation("CartItems");
 
-                    b.Navigation("Reviews");
+                    b.Navigation("OrderItems");
                 });
 
             modelBuilder.Entity("FoodDelivery.Entities.Role", b =>

@@ -94,10 +94,22 @@ public class FoodContext : DbContext
             .HasOne(p=>p.Category)
             .WithMany(c=>c.Products)
             .HasForeignKey(p=>p.CategoryId);
+
         modelBuilder.Entity<Review>()
             .HasOne(r=>r.Product)
             .WithMany(p=>p.Reviews)
             .HasForeignKey(r=>r.ProductId);
+
+        
+        modelBuilder.Entity<Category>(entity =>
+        {
+        entity.Property(e => e.CreatedAt)
+              .HasColumnType("timestamptz")
+              .HasDefaultValueSql("now()");
+
+        entity.Property(e => e.UpdatedAt)
+              .HasColumnType("timestamptz");
+        });
 
         modelBuilder.Entity<OrderDetail>(entity =>
         {
