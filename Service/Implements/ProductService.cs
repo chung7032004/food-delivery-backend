@@ -1,104 +1,104 @@
 using FoodDelivery.DTOs.Product;
 using FoodDelivery.Entities;
+using FoodDelivery.Repositories.Interfaces;
 using FoodDelivery.Service.Interfaces;
-using Microsoft.EntityFrameworkCore;
 
 namespace FoodDelivery.Service.Implements
 {
     public class ProductService : IProductService
     {
-        private readonly FoodContext _context;
+        private readonly IProductRepository _productRepo;
+        private readonly IUnitOfWork _unitOfWork;
 
-        public ProductService(FoodContext context)
+        public ProductService(
+            IProductRepository productRepo,
+            IUnitOfWork unitOfWork)
         {
-            _context = context;
+            _productRepo = productRepo;
+            _unitOfWork = unitOfWork;
         }
 
         public async Task<IEnumerable<ProductResponeDto>> GetAllProductsAsync()
         {
-            return await _context.Products
-                .Include(p => p.Category)
+            var products = await _productRepo.GetAllAsync();
+            return products
                 .OrderBy(p => p.DisplayOrder)
-                .Select(p => MapToDto(p))
-                .ToListAsync();
+                .Select(MapToDto);
         }
 
         public async Task<IEnumerable<ProductResponeDto>> GetFeaturedProductsAsync()
         {
-            return await _context.Products
-                .Include(p => p.Category)
+            var products = await _productRepo.GetAllAsync();
+            return products
                 .Where(p => p.IsFeatured && p.IsAvailable)
                 .OrderBy(p => p.DisplayOrder)
-                .Select(p => MapToDto(p))
-                .ToListAsync();
+                .Select(MapToDto);
         }
 
         public async Task<ProductResponeDto?> GetProductByIdAsync(Guid productId)
         {
-            var product = await _context.Products
-                .Include(p => p.Category)
-                .FirstOrDefaultAsync(p => p.Id == productId);
-
+            var product = await _productRepo.GetByIdAsync(productId);
             return product == null ? null : MapToDto(product);
         }
 
-        public async Task<ProductResponeDto> CreateProductAsync(ProductCreateDto productCreateDto)
+        public async Task<ProductResponeDto> CreateProductAsync(ProductCreateDto dto)
         {
             var product = new Product
             {
-                CategoryId = productCreateDto.CategoryId,
-                Name = productCreateDto.Name,
-                Price = productCreateDto.Price,
-                ImageUrl = productCreateDto.ImageUrl ?? string.Empty,
-                IsAvailable = productCreateDto.IsAvailable,
-                IsFeatured = productCreateDto.IsFeatured,
-                DisplayOrder = productCreateDto.DisplayOrder,
+                CategoryId = dto.CategoryId,
+                Name = dto.Name,
+                Price = dto.Price,
+                ImageUrl = dto.ImageUrl ?? string.Empty,
+                IsAvailable = dto.IsAvailable,
+                IsFeatured = dto.IsFeatured,
+                DisplayOrder = dto.DisplayOrder,
                 CreatedAt = DateTime.UtcNow
             };
 
-            _context.Products.Add(product);
-            await _context.SaveChangesAsync();
+            await _productRepo.AddAsync(product);
+            await _unitOfWork.SaveChangesAsync();
 
-            return await GetProductByIdAsync(product.Id)
-                   ?? throw new Exception("Cannot create product");
+            return MapToDto(product);
         }
 
-        public async Task<bool> UpdateProductAsync(Guid productId, ProductUpdateDto productUpdateDto)
+        public async Task<bool> UpdateProductAsync(Guid productId, ProductUpdateDto dto)
         {
-            var product = await _context.Products.FindAsync(productId);
+            var product = await _productRepo.GetByIdAsync(productId);
             if (product == null) return false;
 
-            product.Name = productUpdateDto.Name;
-            product.Price = productUpdateDto.Price;
-            product.ImageUrl = productUpdateDto.ImageUrl ?? string.Empty;
-            product.IsAvailable = productUpdateDto.IsAvailable;
-            product.IsFeatured = productUpdateDto.IsFeatured;
-            product.DisplayOrder = productUpdateDto.DisplayOrder;
+            product.Name = dto.Name;
+            product.Price = dto.Price;
+            product.ImageUrl = dto.ImageUrl ?? string.Empty;
+            product.IsAvailable = dto.IsAvailable;
+            product.IsFeatured = dto.IsFeatured;
+            product.DisplayOrder = dto.DisplayOrder;
             product.UpdatedAt = DateTime.UtcNow;
 
-            await _context.SaveChangesAsync();
+            await _productRepo.UpdateAsync(product);
+            await _unitOfWork.SaveChangesAsync();
             return true;
         }
 
         public async Task<bool> ToggleProductAvailabilityAsync(Guid productId)
         {
-            var product = await _context.Products.FindAsync(productId);
+            var product = await _productRepo.GetByIdAsync(productId);
             if (product == null) return false;
 
             product.IsAvailable = !product.IsAvailable;
             product.UpdatedAt = DateTime.UtcNow;
 
-            await _context.SaveChangesAsync();
+            await _productRepo.UpdateAsync(product);
+            await _unitOfWork.SaveChangesAsync();
             return true;
         }
 
         public async Task<bool> DeleteProductAsync(Guid productId)
         {
-            var product = await _context.Products.FindAsync(productId);
+            var product = await _productRepo.GetByIdAsync(productId);
             if (product == null) return false;
 
-            _context.Products.Remove(product);
-            await _context.SaveChangesAsync();
+            await _productRepo.DeleteAsync(product);
+            await _unitOfWork.SaveChangesAsync();
             return true;
         }
 
@@ -108,7 +108,7 @@ namespace FoodDelivery.Service.Implements
             {
                 Id = p.Id,
                 CategoryId = p.CategoryId,
-                CategoryName = p.Category.Name,
+                CategoryName = p.Category?.Name ?? "",
                 Name = p.Name,
                 Price = p.Price,
                 ImageUrl = p.ImageUrl,
