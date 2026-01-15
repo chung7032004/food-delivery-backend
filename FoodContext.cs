@@ -52,24 +52,16 @@ public class FoodContext : DbContext
         modelBuilder.Entity<Order>()
             .HasIndex(o => o.OrderCode)
             .IsUnique();
-        modelBuilder.Entity<Order>()
+        modelBuilder.Entity<OrderItem>()
             .HasOne(o=>o.Review)
-            .WithOne(r=>r.Order)
-            .HasForeignKey<Review>(r=>r.OrderId);
+            .WithOne(r=>r.OrderItem)
+            .HasForeignKey<Review>(r=>r.OrderItemId);
 
         modelBuilder.Entity<OrderItem>()
             .HasOne(oi=>oi.Order)
             .WithMany(o=>o.OrderItems)
             .HasForeignKey(oi=>oi.OrderId);
-        modelBuilder.Entity<OrderItem>()
-            .HasOne(oi=>oi.Product)
-            .WithMany(o=>o.OrderItems)
-            .HasForeignKey(oi=>oi.ProductId);
 
-        modelBuilder.Entity<Order>()
-            .HasOne(o=>o.Address)
-            .WithMany(a=>a.Orders)
-            .HasForeignKey(o=>o.AddressId);
         modelBuilder.Entity<Order>()
             .HasOne(o=>o.Customer)
             .WithMany(u=>u.Orders)
@@ -96,7 +88,10 @@ public class FoodContext : DbContext
             .HasOne(p=>p.Category)
             .WithMany(c=>c.Products)
             .HasForeignKey(p=>p.CategoryId);
-
+        modelBuilder.Entity<Review>()
+            .HasOne(r=>r.Product)
+            .WithMany(p=>p.Reviews)
+            .HasForeignKey(r=>r.ProductId);
 
         modelBuilder.Entity<OrderDetail>(entity =>
         {
