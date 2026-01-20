@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 public class FoodContext : DbContext
 {
     public FoodContext(DbContextOptions<FoodContext> options ) : base(options) {}
+    // public DbSet<RestaurantProfile> RestaurantProfiles{get; set;} 
     public DbSet<Address> Addresses{get;set;}
     public DbSet<Cart> Carts{get;set;}
     public DbSet<CartItem> CartItems{get;set;}
@@ -99,7 +100,11 @@ public class FoodContext : DbContext
             .HasOne(r=>r.Product)
             .WithMany(p=>p.Reviews)
             .HasForeignKey(r=>r.ProductId);
-
+        modelBuilder.Entity<OrderStatusHistory>()
+            .HasOne(osh=>osh.ChangeByUser)
+            .WithMany(u=>u.OrderStatusHistories)
+            .HasForeignKey(osh=>osh.ChangeByUserId)
+            .OnDelete(DeleteBehavior.Restrict);
         
         modelBuilder.Entity<Category>(entity =>
         {
@@ -117,7 +122,7 @@ public class FoodContext : DbContext
             entity.HasOne(od => od.Order)
                 .WithOne(o => o.OrderDetail)
                 .HasForeignKey<OrderDetail>(od => od.OrderId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict);
             // Shipper (OrderDetail → User)
             entity.HasOne(od => od.Shipper)
                 .WithMany() 

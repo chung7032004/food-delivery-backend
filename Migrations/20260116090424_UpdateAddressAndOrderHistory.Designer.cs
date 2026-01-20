@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -10,9 +11,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FoodDelivery.Migrations
 {
     [DbContext(typeof(FoodContext))]
-    partial class FoodContextModelSnapshot : ModelSnapshot
+    [Migration("20260116090424_UpdateAddressAndOrderHistory")]
+    partial class UpdateAddressAndOrderHistory
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -251,9 +254,6 @@ namespace FoodDelivery.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<bool>("IsRemoved")
-                        .HasColumnType("boolean");
-
                     b.Property<Guid>("OrderId")
                         .HasColumnType("uuid");
 
@@ -271,9 +271,6 @@ namespace FoodDelivery.Migrations
                     b.Property<int>("Quantity")
                         .HasColumnType("integer");
 
-                    b.Property<string>("RemoveReason")
-                        .HasColumnType("text");
-
                     b.Property<decimal>("UnitPrice")
                         .HasColumnType("numeric");
 
@@ -289,9 +286,6 @@ namespace FoodDelivery.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
-
-                    b.Property<int>("ActionBy")
-                        .HasColumnType("integer");
 
                     b.Property<Guid>("ChangeByUserId")
                         .HasColumnType("uuid");
