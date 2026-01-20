@@ -91,8 +91,9 @@ public class CartService : ICartService
                 ProductId = cartItemRequest.ProductId,
                 Quantity = cartItemRequest.Quantity,    
             };
+            await _cartItemRepository.AddAsync(cartItem);
         }
-        await _cartItemRepository.AddAsync(cartItem);
+        
         await _context.SaveChangesAsync();
         return Result.Success();
     }
