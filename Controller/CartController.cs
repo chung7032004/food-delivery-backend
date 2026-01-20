@@ -104,13 +104,13 @@ public class CartController : ControllerBase
 
     [HttpDelete("items")]
     [Authorize(Roles = "Customer")]
-    public async Task<IActionResult> DeleteCartItemRange(Guid productId,[FromBody] IEnumerable<Guid> productIds)
+    public async Task<IActionResult> DeleteCartItemRange([FromBody] DeleteCartItemsDto request)
     {
         if(!User.TryGetUserId(out Guid userId))
         {
             return Unauthorized(Result.Failure("INVALID_TOKEN","Token không hợp lệ hoặc thiếu UserId."));
         }
-        var result = await _cartService.DeleteCartItemRangeAsync(userId,productIds);
+        var result = await _cartService.DeleteCartItemRangeAsync(userId,request.ProductIds);
         if (result.IsSuccess)
         {
             return Ok(result);
