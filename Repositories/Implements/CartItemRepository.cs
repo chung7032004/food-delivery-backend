@@ -25,6 +25,17 @@ public class CartItemRepository : ICartItemRepository
             .Where(ci=>ci.CartId==cartId)
             .ToListAsync();
     }
+    public async Task<List<CartItem>> GetByIdsAsync(Guid customerId,List<Guid> ids)
+    {
+        return await _context.CartItems
+            .Include(ci=>ci.Product)
+            .Include(ci=>ci.Cart)
+            .Where(ci=>
+                ids.Contains(ci.Id)&&
+                ci.Cart.CustomerId == customerId
+            )
+            .ToListAsync();
+    }
     public async Task AddAsync(CartItem item)
     {
         await _context.CartItems.AddAsync(item);
