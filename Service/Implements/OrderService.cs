@@ -80,8 +80,14 @@ public class OrderService :IOrderService
                 Quantity  = ci.Quantity,
                 UnitPrice = ci.Product.Price,
         }).ToList();
-        return await CreateOrderInternalAsync(customerId,request.AddressId,items,request.Note);
-    }
+        var result =  await CreateOrderInternalAsync(customerId,request.AddressId,items,request.Note);
+        if (result.IsSuccess)
+        {
+            await _cartItemRepository.DeleteRangeAsync(cartItems);
+            await _context.SaveChangesAsync();
+        }
+        return result;
+        }
 
     private async Task<Result<CreateOrderResponseDto>> CreateOrderInternalAsync(
         Guid customerId, Guid addressId,
