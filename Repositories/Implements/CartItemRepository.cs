@@ -55,4 +55,10 @@ public class CartItemRepository : ICartItemRepository
         _context.CartItems.RemoveRange(items);
         await Task.CompletedTask;
     }
+    public async Task<int> CountByCustomerIdAsync(Guid customerId)
+    {
+        return await _context.CartItems
+            .Where(ci => ci.Cart.CustomerId == customerId)
+            .CountAsync();
+    }
 }

@@ -15,13 +15,42 @@ public class CartRepository : ICartRepository
         return await _context.Carts
             .FirstOrDefaultAsync(c=>c.CustomerId == customerId);
     }
-    public async Task<Cart?> GetCartWithItemsByCustomerIdAsync(Guid customerId)
+    public async Task<Cart?> GetCartWithItemsByCustomerIdAsync(Guid customerId,int page,int pageSize)
     {
-        return await _context.Carts.AsNoTracking()
-                .Include(c=>c.CartItems)
-                .ThenInclude(ci=>ci.Product)
-                .ThenInclude(p=>p.Category)
-                .FirstOrDefaultAsync(c=>c.CustomerId == customerId);
+        return await _context.Carts
+            .AsNoTracking()
+            .Where(c => c.CustomerId == customerId)
+            .Select(c => new Cart
+            {
+                Id = c.Id,
+                CustomerId = c.CustomerId,
+                CartItems = c.CartItems
+                    .OrderBy(ci => ci.AddedAt)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(ci => new CartItem
+                    {
+                        Id = ci.Id,
+                        Quantity = ci.Quantity,
+                        ProductId = ci.ProductId,
+                        AddedAt = ci.AddedAt,
+                        UpdatedAt = ci.UpdatedAt,
+                        Product = new Product
+                        {
+                            Id = ci.Product.Id,
+                            Name = ci.Product.Name,
+                            Price = ci.Product.Price,
+                            ImageUrl = ci.Product.ImageUrl,
+                            Category = new Category
+                            {
+                                Id = ci.Product.Category.Id,
+                                Name = ci.Product.Category.Name
+                            }
+                        }
+                    })
+                    .ToList()
+            })
+            .FirstOrDefaultAsync();
     }
     public async Task<Cart?> GetByIdAsync(Guid cartId)
     {
