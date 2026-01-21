@@ -110,6 +110,11 @@ public class FoodContext : DbContext
         entity.Property(e => e.UpdatedAt)
               .HasColumnType("timestamptz");
         });
+        modelBuilder.Entity<Shipper>()
+            .HasOne(s => s.User)
+            .WithOne(u => u.Shipper)
+            .HasForeignKey<Shipper>(s => s.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<OrderDetail>(entity =>
         {
@@ -120,7 +125,7 @@ public class FoodContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
             // Shipper (OrderDetail → User)
             entity.HasOne(od => od.Shipper)
-                .WithMany() 
+                .WithMany(s=>s.Orders) 
                 .HasForeignKey(od => od.ShipperId)
                 .OnDelete(DeleteBehavior.Restrict);
             //  Người hủy đơn (OrderDetail → User)

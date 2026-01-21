@@ -8,12 +8,12 @@ namespace FoodDelivery.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
     public class ShipperController : ControllerBase
     {
         private readonly IShipperService _service;
         public ShipperController(IShipperService service) { _service = service; }
         [HttpPost("confirm-pickup/{orderId}")]
+        [Authorize(Roles ="Shipper")]
         public async Task<IActionResult> Confirm(Guid orderId)
         {
             Guid shipperId;
@@ -32,6 +32,7 @@ namespace FoodDelivery.Controllers
         }
 
         [HttpPost("delivery-success/{orderId}")]
+        [Authorize(Roles ="Shipper")]
         public async Task<IActionResult> Success(Guid orderId)
         {
             var ok = await _service.MarkSuccessAsync(orderId);
@@ -40,6 +41,7 @@ namespace FoodDelivery.Controllers
         }
 
         [HttpPost("delivery-failed")]
+        [Authorize(Roles ="Shipper")]
         public async Task<IActionResult> Failed([FromBody] ShipperActionDTO dto)
         {
             Guid? shipperId = null;

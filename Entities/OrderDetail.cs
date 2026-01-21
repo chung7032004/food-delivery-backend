@@ -6,7 +6,7 @@ namespace FoodDelivery.Entities
         public Guid OrderId {get; set;} 
         public Order Order {get;set;} = null!;
         public Guid? ShipperId { get; set; }
-        public User? Shipper { get; set; }
+        public Shipper? Shipper { get; set; }
         public OrderStatus Status {get; set;} 
         public PaymentMethod PaymentMethod {get; set;} 
         public PaymentStatus PaymentStatus {get; set;} 

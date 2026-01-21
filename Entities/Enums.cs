@@ -1,10 +1,13 @@
 public enum OrderStatus
 {
-    Pending = 1,      // Vừa tạo
-    Confirmed = 2,    // Shop xác nhận
-    Shipping = 3,     // Đang giao
-    Completed = 4,    // Giao thành công
-    Cancelled = 5     // Bị huỷ
+    Pending = 1,                    // Khách vừa đặt
+    WaitingCustomerDecision = 2,    // Nhà hàng báo hết món → chờ khách phản hồi
+    Confirmed = 3,                  // Khách đồng ý tiếp tục
+    Preparing = 4,                  // Đang nấu
+    ReadyForPickup = 5,             // Chờ shipper
+    Shipping = 6,                   // Đang giao
+    Completed = 7,                  // Hoàn tất
+    Cancelled = 8                   // Bị hủy
 }
 
 public enum PaymentMethod
