@@ -105,6 +105,11 @@ builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ICartService,CartService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 
+
+// Review service
+builder.Services.AddScoped<FoodDelivery.Service.Interfaces.IReviewService, FoodDelivery.Service.Implements.ReviewService>();
+builder.Services.AddScoped<IShipperService, ShipperService>();
+
 builder.Services.AddAuthorization();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(option =>
 {
