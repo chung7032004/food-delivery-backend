@@ -426,6 +426,23 @@ namespace FoodDelivery.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Roles");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000001"),
+                            Name = "Customer"
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000002"),
+                            Name = "Shipper"
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000003"),
+                            Name = "Admin"
+                        });
                 });
 
             modelBuilder.Entity("FoodDelivery.Entities.User", b =>
