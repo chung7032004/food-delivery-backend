@@ -26,11 +26,16 @@ namespace FoodDelivery.Service.Implementations
             _unitOfWork = unitOfWork;
             _roleRepository = roleRepository;
         }
-        public async Task <Result> RegisterUserAsync(string email, string password, string fullName)
+        public async Task <Result> RegisterUserAsync(string email, string password, string fullName, string phone)
         {
-            if(string.IsNullOrEmpty(email) || string.IsNullOrWhiteSpace(password) || string.IsNullOrWhiteSpace(fullName))
+            if(string.IsNullOrEmpty(email) || string.IsNullOrWhiteSpace(password) || string.IsNullOrWhiteSpace(fullName) || string.IsNullOrWhiteSpace(phone))
             {
                 return Result.Failure("INVALID_INPUT","Thông tin không hợp lệ");
+            }
+            // Validate phone number: phải bắt đầu 0 và đủ 10 chữ số
+            if(!System.Text.RegularExpressions.Regex.IsMatch(phone, @"^0\d{9}$"))
+            {
+                return Result.Failure("INVALID_PHONE", "Số điện thoại phải bắt đầu bằng 0 và có đúng 10 chữ số");
             }
             if(await _userRepository.IsEmailExistsAsync(email.Trim()))
             {
@@ -42,6 +47,7 @@ namespace FoodDelivery.Service.Implementations
             {
                 Email = email.Trim(),
                 FullName = fullName,
+                Phone = phone,
                 PasswordHash = passwordHash,
                 PasswordSalt = hmac.Key,
                 CreatedAt = DateTime.UtcNow,

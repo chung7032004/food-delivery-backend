@@ -81,11 +81,11 @@ builder.Services.AddDbContext<FoodContext>(options =>
 //Định nghĩa chính sách CORS
 builder.Services.AddCors(options => {
     options.AddPolicy("AllowReactApp",
-        policy => policy.WithOrigins("http://localhost:5173") // Port của React
+        policy => policy.WithOrigins("http://localhost:8080", "http://localhost:5173") // React dev ports
                         .AllowAnyMethod()
-                        .AllowAnyHeader());
+                        .AllowAnyHeader()
+                        .AllowCredentials());
 });
-
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
