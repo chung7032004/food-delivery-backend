@@ -40,7 +40,7 @@ public class ReviewController : ControllerBase
         return Ok(result);
     }
     //GET	/api/customers/me/reviews
-    [HttpGet("/api/customers/me/reviews")]
+    [HttpGet("me/reviews")]
     [Authorize(Roles = "Customer")]
     public async Task<IActionResult> GetMyReviews([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
@@ -126,7 +126,6 @@ public class ReviewController : ControllerBase
         {
             return result.ErrorCode switch
             {
-                   
                 "REVIEW_NOT_FOUND" => NotFound(result),
                 "REVIEW_ALREADY_HIDDEN" => BadRequest(result),
                 _ => BadRequest(result)
@@ -151,8 +150,7 @@ public class ReviewController : ControllerBase
         if (!result.IsSuccess)
         {
             return result.ErrorCode switch
-            {
-                   
+            { 
                 "REVIEW_NOT_FOUND" => NotFound(result),
                 _ => BadRequest(result)
             };
