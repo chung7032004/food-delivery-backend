@@ -2,19 +2,15 @@ using System.ComponentModel.DataAnnotations;
 
 namespace FoodDelivery.DTOs.Review
 {
-    public class CreateReviewDto
+    public class ReviewCreateDto
     {
         [Required]
         public Guid OrderItemId { get; set; }
 
-        [Required]
-        public Guid ProductId { get; set; }
-
-        [Required]
-        [Range(1, 5)]
+        [Range(1, 5, ErrorMessage = "Rating phải từ 1 đến 5 sao")]
         public int Rating { get; set; }
 
-        [StringLength(1000)]
+        [MaxLength(1000)]
         public string? Comment { get; set; }
     }
 }
