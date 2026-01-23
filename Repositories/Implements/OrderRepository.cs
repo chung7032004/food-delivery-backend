@@ -27,7 +27,8 @@ public class OrderRepository : IOrderRepository
                 CreatedAt = o.CreatedAt,
                 TotalAmount = o.TotalAmount,
                 ShippingFee = o.ShippingFee,
-                CurrentStatus = o.OrderDetail.Status
+                CurrentStatus = o.OrderDetail.Status,
+                EstimatedDeliveryTime = o.OrderDetail.EstimatedDeliveryTime
             })
             .ToListAsync();
     }

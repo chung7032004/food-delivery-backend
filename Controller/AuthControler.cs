@@ -6,7 +6,7 @@ using FoodDelivery.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using FoodDelivery.Extensions;
 
-namespace FoodDelivery.Controller;
+namespace FoodDelivery.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]

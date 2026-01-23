@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-namespace FoodDelivery.Controller;
+namespace FoodDelivery.Controllers;
 
 [ApiController]
 [Route("api/[Controller]")]

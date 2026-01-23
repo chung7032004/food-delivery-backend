@@ -1,3 +1,4 @@
+using FoodDelivery.Middlewares;
 using FoodDelivery.Repositories;
 using FoodDelivery.Repositories.Implementations;
 using FoodDelivery.Repositories.Interfaces;
@@ -82,8 +83,10 @@ builder.Services.AddDbContext<FoodContext>(options =>
 builder.Services.AddCors(options => {
     options.AddPolicy("AllowReactApp",
         policy => policy.WithOrigins("http://localhost:5173") // Port của React
+                        .WithOrigins("http://localhost:8080")
                         .AllowAnyMethod()
-                        .AllowAnyHeader());
+                        .AllowAnyHeader()
+                        .AllowCredentials());
 });
 
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -97,6 +100,7 @@ builder.Services.AddScoped<ICartItemRepository, CartItemRepository>();
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<IOrderRepository,OrderRepository>();
+builder.Services.AddScoped<IRestaurantRepository,RestaurantRepository>();
 
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
@@ -106,6 +110,7 @@ builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ICartService,CartService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<IRestaurantService,RestaurantService>();
 
 builder.Services.AddAuthorization();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(option =>
@@ -145,6 +150,7 @@ app.UseRouting();
 app.UseCors("AllowReactApp");
 app.UseAuthentication(); //Kiểm tra bạn là ai 
 app.UseAuthorization();// Kiểm tra bạn có quyền truy cập gì
+app.UseMiddleware<RestaurantOpenMiddleware>();// chặn order khi quán đóng 
 app.MapControllers();// Kết nối các đường dẫn (Route) tới Controller
 
 app.Run();
