@@ -3,7 +3,7 @@ using FoodDelivery.Service.Implements;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace FoodDelivery.Controller
+    namespace FoodDelivery.Controllers
 {
     [ApiController]
     [Route("api/products")]

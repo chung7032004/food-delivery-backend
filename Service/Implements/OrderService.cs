@@ -3,7 +3,6 @@ using FoodDelivery.DTOs.Order;
 using FoodDelivery.Entities;
 using FoodDelivery.Repositories.Interfaces;
 using FoodDelivery.Service.Interfaces;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 
 namespace FoodDelivery.Service.Implementations;
@@ -13,12 +12,14 @@ public class OrderService :IOrderService
     private readonly IOrderRepository _orderRepository;
     private readonly ICartItemRepository _cartItemRepository;
     private readonly IAddressRepository _addressRepository;
+    private readonly IRestaurantRepository _restaurantRepository;
     private readonly FoodContext _context;
     public OrderService (
         IProductRepository productRepo,
         IOrderRepository orderRepo,  
         ICartItemRepository cartItemRepo,
         IAddressRepository addressRepo,
+        IRestaurantRepository restaurantRepository,
         FoodContext context)
     {
         _productRepository = productRepo;
@@ -26,9 +27,14 @@ public class OrderService :IOrderService
         _context = context;
         _cartItemRepository = cartItemRepo;
         _addressRepository = addressRepo;
+        _restaurantRepository = restaurantRepository;
     }
     public async Task<Result<CreateOrderResponseDto>> BuyNowAsync(Guid customerId,BuyNowRequestDto request)
     {
+        if(request.Quantity <= 0)
+        {
+            return Result<CreateOrderResponseDto>.Failure("INVALID_QUANTITY","Số lượng phải lớn hơn 0");
+        }
         var product = await _productRepository.GetByIdAsync(request.ProductId);
         if(product == null)
         {
@@ -37,6 +43,11 @@ public class OrderService :IOrderService
         if (!product.IsAvailable)
         {
             return Result<CreateOrderResponseDto>.Failure("PRODUCT_UNAVAILABLE","Đơn hang đang có sản phẩm ngừng bán");
+        }
+        var statusRestaurant = await _restaurantRepository.GetStatusRestaurantAsync();
+        if(statusRestaurant != null &&statusRestaurant.IsOpen == false)
+        {
+            return Result<CreateOrderResponseDto>.Failure("RESTAURANT_CLOSE",statusRestaurant.ClosingMessage ?? "Quán tạm nghỉ. Bạn có thể quay lại vào hôm sau.");
         }
         var item = new List<CreateOrderItemDto>
         {
@@ -60,7 +71,7 @@ public class OrderService :IOrderService
         {
             return Result<CreateOrderResponseDto>.Failure("CART_EMPTY","Đơn hàng phải có ít nhất một sản phẩm");
         }
-        if (cartItems.Any(ci => ci.Quantity < 0))
+        if (cartItems.Any(ci => ci.Quantity <= 0))
         {
             return Result<CreateOrderResponseDto>.Failure("INVALID_QUANTITY","Số lượng sản phẩm không hợp lệ");
         }
@@ -80,9 +91,32 @@ public class OrderService :IOrderService
                 Quantity  = ci.Quantity,
                 UnitPrice = ci.Product.Price,
         }).ToList();
-        return await CreateOrderInternalAsync(customerId,request.AddressId,items,request.Note);
-    }
+        var result =  await CreateOrderInternalAsync(customerId,request.AddressId,items,request.Note);
+        if (result.IsSuccess)
+        {
+            await _cartItemRepository.DeleteRangeAsync(cartItems);
+            await _context.SaveChangesAsync();
+        }
+        return result;
+        }
+    private double CalculateDistance(double lat1, double lon1, double lat2, double lon2)
+    {
+        Console.WriteLine(lat1);
+        Console.WriteLine(lon1);
+        Console.WriteLine(lat2);
+        Console.WriteLine(lon2);
 
+        var R = 6371; //Bán kính trái đất;
+        var dLat = (lat1 - lat2) * (Math.PI/180);
+        var dLon = (lon1 - lon2) * (Math.PI/180);
+        var a = Math.Sin(dLat/2) * Math.Sin(dLat/2)
+            + Math.Cos(lat1* Math.PI/180)*Math.Cos(lat2* Math.PI/180) 
+            * Math.Sin(dLon/2)*Math.Sin(dLon/2);
+        var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1-a));
+        var d = R * c;
+        return d *1.2; //Giả sử hệ số đường bộ là 1.2
+    }
+    private string GenerateOrderCode() => $"FD{DateTime.UtcNow.Ticks}";
     private async Task<Result<CreateOrderResponseDto>> CreateOrderInternalAsync(
         Guid customerId, Guid addressId,
         List<CreateOrderItemDto> items, string? note)
@@ -92,12 +126,32 @@ public class OrderService :IOrderService
         {
             return Result<CreateOrderResponseDto>.Failure("ADDRESS_NOT_FOUND","Không tìm thấy địa chỉ");
         }
+        var restaurant = await _restaurantRepository.GetMyRestaurant();
+        if(restaurant== null)
+        {
+            return Result<CreateOrderResponseDto>.Failure("RESTAURANT_NOT_CONFIGURED","Cửa hàng chưa được cấu hình.");
+        }
+        var distance = CalculateDistance(restaurant.Latitude,restaurant.Longitude,address.Latitude,address.Longitude);
+        Console.WriteLine($"distance: {distance}");
+        if (distance > 40)
+        {
+            return Result<CreateOrderResponseDto>.Failure("TOO_FAR", "Địa chỉ giao hàng quá xa (tối đa 40km)");
+        }
+        decimal shippingFee = 15000;
+        if(distance > 3)
+        {
+            shippingFee += (decimal)(distance - 3) * 5000;
+        }
+        shippingFee = Math.Ceiling(shippingFee/1000)*1000;
+        double estimated = 10 + (items.Count -1 ) *2 + (distance * 3);
+        DateTime estimatedDeliveryTime = DateTime.UtcNow.AddMinutes(estimated);
+        Console.WriteLine("shippingFee",shippingFee);
         var order = new Order()
         {
             CustomerId = customerId,
             Note = note,
             TotalAmount = items.Sum(i=>i.UnitPrice * i.Quantity),
-            ShippingFee = 15000,
+            ShippingFee = shippingFee,
             CreatedAt = DateTime.UtcNow,
             OrderCode = GenerateOrderCode(),
             ReceiverName = address.ReceiverName,
@@ -119,7 +173,8 @@ public class OrderService :IOrderService
         {
             Status = OrderStatus.Pending,
             PaymentMethod = PaymentMethod.Cash,
-            //tính thời gian giao hang dự kiến sau
+            PaymentStatus = PaymentStatus.Unpaid,
+            EstimatedDeliveryTime = estimatedDeliveryTime
         };
         order.OrderStatusHistories.Add(new OrderStatusHistory()
         {
@@ -138,10 +193,10 @@ public class OrderService :IOrderService
             OrderId = order.Id,
             Status = order.OrderDetail.Status,
             TotalAmount = order.TotalAmount,
+            ShippingFee = shippingFee,
+            EstimatedDeliveryTime = estimatedDeliveryTime
         });
-
     }
-    private string GenerateOrderCode() => $"FD{DateTime.UtcNow.Ticks}";
     public async Task<Result<PagedResponse<OrderHistoryItemResponse>>> GetMyOrderAsync(Guid customerId, int page, int pageSize)
     {
         pageSize = pageSize > 100 ? 100 : pageSize < 1 ? 10 : pageSize;

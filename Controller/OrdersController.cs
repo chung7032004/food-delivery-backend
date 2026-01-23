@@ -31,10 +31,12 @@ public class OrdersController : ControllerBase
         {
             return result.ErrorCode switch
             {
-                  
+                "INVALID_QUANTITY" =>BadRequest(result),
                 "PRODUCT_NOT_FOUND" => NotFound(result),
                 "ADDRESS_NOT_FOUND" => NotFound(result),
                 "PRODUCT_UNAVAILABLE" => BadRequest(result),
+                "TOO_FAR" => BadRequest(result),
+                "RESTAURANT_NOT_CONFIGURED" =>Conflict(result),
                 _ => BadRequest(result),
             };
         }
@@ -61,6 +63,8 @@ public class OrdersController : ControllerBase
                 "INVALID_QUANTITY" => BadRequest(result),
                 "FORBIDDEN" => Forbid(),
                 "PRODUCT_UNAVAILABLE" => BadRequest(result),
+                "TOO_FAR" => BadRequest(result),
+                "RESTAURANT_NOT_CONFIGURED" =>Conflict(result),
                 _ => BadRequest(result),
             };
         }
@@ -145,7 +149,7 @@ public class OrdersController : ControllerBase
         var result = await _orderService.GetOrderAdminAsync(filter);
         return Ok(result);
     }
-    [HttpPost("{orderId}/admin/confirm")]
+    [HttpPost("api/admin/order/{orderId}/confirm")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> ConfirmOrder(Guid orderId)
     {
@@ -165,7 +169,7 @@ public class OrdersController : ControllerBase
         }
         return Ok(result);
     }
-    [HttpPost("{orderId}/admin/out-of-stock")]
+    [HttpPost("api/admin/order/{orderId}out-of-stock")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> OutOfStock(Guid orderId, [FromBody] OutOfStockRequest request)
     {
@@ -186,7 +190,7 @@ public class OrdersController : ControllerBase
         }
         return Ok(result);
     }
-    [HttpPost("{orderId}/admin/start-preparing")]
+    [HttpPost("api/admin/order/{orderId}/start-preparing")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> StartPreparing(Guid orderId)
     {
@@ -206,7 +210,7 @@ public class OrdersController : ControllerBase
         }
         return Ok(result);
     }
-    [HttpPost("{orderId}/admin/cancel")]
+    [HttpPost("api/admin/order/{orderId}/cancel")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> MarkAsReady(Guid orderId, [FromBody] CancelOrderRequestDto request)
     {

@@ -11,4 +11,5 @@ public interface ICartItemRepository
     Task UpdateAsync(CartItem item);
     Task DeleteAsync(CartItem item);
     Task DeleteRangeAsync(IEnumerable<CartItem> items);
+    Task<int> CountByCustomerIdAsync(Guid customerId);
 }
