@@ -9,7 +9,6 @@ public enum OrderStatus
     Completed = 7,                  // Hoàn tất
     Cancelled = 8                   // Bị hủy
 }
-
 public enum PaymentMethod
 {
     Cash = 0,

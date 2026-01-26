@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 public class FoodContext : DbContext
 {
     public FoodContext(DbContextOptions<FoodContext> options ) : base(options) {}
+    public DbSet<RestaurantProfile> RestaurantProfiles{get; set;} 
     public DbSet<Address> Addresses{get;set;}
     public DbSet<Cart> Carts{get;set;}
     public DbSet<CartItem> CartItems{get;set;}
@@ -27,7 +28,23 @@ public class FoodContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-
+        modelBuilder.Entity<RestaurantProfile>().HasData(
+            new RestaurantProfile
+            {
+                Id = Guid.Parse("11111111-1111-1111-1111-111111111111"),
+                Name = "Food Delivery Shop",
+                Address = "319 Hùng Vương, P. Vĩnh Trung, Q. Thanh Khê, Đà Nẵng",
+                Phone = "0909123456",
+                IsOpen = true,
+                ClosingMessage = null,
+                OpenTime = new TimeSpan(8, 0, 0),
+                CloseTime = new TimeSpan(22, 0, 0),
+                Latitude = 16.067771,
+                Longitude = 108.214287,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            }
+        );
         modelBuilder.Entity<User>()
             .HasIndex(u=>u.Email)
             .IsUnique();
@@ -99,7 +116,11 @@ public class FoodContext : DbContext
             .HasOne(r=>r.Product)
             .WithMany(p=>p.Reviews)
             .HasForeignKey(r=>r.ProductId);
-
+        modelBuilder.Entity<OrderStatusHistory>()
+            .HasOne(osh=>osh.ChangeByUser)
+            .WithMany(u=>u.OrderStatusHistories)
+            .HasForeignKey(osh=>osh.ChangeByUserId)
+            .OnDelete(DeleteBehavior.Restrict);
         
         modelBuilder.Entity<Category>(entity =>
         {
@@ -122,7 +143,7 @@ public class FoodContext : DbContext
             entity.HasOne(od => od.Order)
                 .WithOne(o => o.OrderDetail)
                 .HasForeignKey<OrderDetail>(od => od.OrderId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict);
             // Shipper (OrderDetail → User)
             entity.HasOne(od => od.Shipper)
                 .WithMany(s=>s.Orders) 

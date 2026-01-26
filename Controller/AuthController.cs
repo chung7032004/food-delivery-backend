@@ -6,7 +6,7 @@ using FoodDelivery.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using FoodDelivery.Extensions;
 
-namespace FoodDelivery.Controller;
+namespace FoodDelivery.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
@@ -21,7 +21,7 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     public async Task<IActionResult> Register ([FromBody] RegisterRequest request)
     {
-        var result = await _authService.RegisterUserAsync(request.Email, request.Password,request.FullName );
+        var result = await _authService.RegisterUserAsync(request.Email, request.Password, request.FullName, request.Phone);
         if (!result.IsSuccess)
         {
             return BadRequest(result);
@@ -39,8 +39,8 @@ public class AuthController : ControllerBase
             return result.ErrorCode switch
             {
                 "INVALID_INPUT"    => BadRequest(result),
-                "USER_NOT_FOUND"   => Unauthorized(result),
-                "INVALID_PASSWORD" => Unauthorized(result),
+                "USER_NOT_FOUND"   => NotFound(result),
+                "INVALID_PASSWORD" => BadRequest(result),
                 "USER_INACTIVE"    => StatusCode(StatusCodes.Status403Forbidden, result),
                 _                  => StatusCode(StatusCodes.Status500InternalServerError, result)
             };
