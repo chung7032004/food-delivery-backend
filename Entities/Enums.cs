@@ -9,14 +9,6 @@ public enum OrderStatus
     Completed = 7,                  // Hoàn tất
     Cancelled = 8                   // Bị hủy
 }
-public enum OrderActionBy
-{
-    Customer = 1,
-    Shipper = 2,
-    Admin = 3,
-    System = 4,
-}
-
 public enum PaymentMethod
 {
     Cash = 0,

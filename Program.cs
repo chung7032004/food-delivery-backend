@@ -99,20 +99,26 @@
     builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
     builder.Services.AddScoped<IOrderRepository,OrderRepository>();
     builder.Services.AddScoped<IRestaurantRepository,RestaurantRepository>();
+    builder.Services.AddScoped<IReviewRepository,ReviewRepository>();
 
-    builder.Services.AddScoped<IAuthService, AuthService>();
-    builder.Services.AddScoped<IAccountService, AccountService>();
-    builder.Services.AddScoped<IFileService,FileService>();
-    builder.Services.AddScoped<IAddressService,AddressService>();
-    builder.Services.AddScoped<IProductService, ProductService>();
-    builder.Services.AddScoped<ICartService,CartService>();
-    builder.Services.AddScoped<ICategoryService, CategoryService>();
-    builder.Services.AddScoped<IOrderService, OrderService>();
-    builder.Services.AddScoped<IRestaurantService,RestaurantService>();
 
-    builder.Services.AddAuthorization();
-    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(option =>
-    {
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IAccountService, AccountService>();
+builder.Services.AddScoped<IFileService,FileService>();
+builder.Services.AddScoped<IAddressService,AddressService>();
+builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<ICartService,CartService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<IReviewService,ReviewService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<IRestaurantService,RestaurantService>();
+builder.Services.AddScoped<IReviewService,ReviewService>();
+builder.Services.AddScoped<IShipperService, ShipperService>();
+
+builder.Services.AddAuthorization();
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(option =>
+{
+
         option.TokenValidationParameters = new TokenValidationParameters
         {
             // 1. Xác minh Khóa Bí mật (Khóa quan trọng nhất!)

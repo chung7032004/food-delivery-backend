@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -10,9 +11,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FoodDelivery.Migrations
 {
     [DbContext(typeof(FoodContext))]
-    partial class FoodContextModelSnapshot : ModelSnapshot
+    [Migration("20260121092205_AddTableShipperAndUpdateReview")]
+    partial class AddTableShipperAndUpdateReview
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -46,14 +49,6 @@ namespace FoodDelivery.Migrations
 
                     b.Property<double>("Longitude")
                         .HasColumnType("double precision");
-
-                    b.Property<string>("PhoneNumber")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("ReceiverName")
-                        .IsRequired()
-                        .HasColumnType("text");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -251,9 +246,6 @@ namespace FoodDelivery.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<bool>("IsRemoved")
-                        .HasColumnType("boolean");
-
                     b.Property<Guid>("OrderId")
                         .HasColumnType("uuid");
 
@@ -271,9 +263,6 @@ namespace FoodDelivery.Migrations
                     b.Property<int>("Quantity")
                         .HasColumnType("integer");
 
-                    b.Property<string>("RemoveReason")
-                        .HasColumnType("text");
-
                     b.Property<decimal>("UnitPrice")
                         .HasColumnType("numeric");
 
@@ -289,9 +278,6 @@ namespace FoodDelivery.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
-
-                    b.Property<int>("ActionBy")
-                        .HasColumnType("integer");
 
                     b.Property<Guid>("ChangeByUserId")
                         .HasColumnType("uuid");
@@ -309,11 +295,14 @@ namespace FoodDelivery.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("ChangeByUserId");
-
                     b.HasIndex("OrderId");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("OrderStatusHistories");
                 });
@@ -334,7 +323,6 @@ namespace FoodDelivery.Migrations
                         .HasColumnType("integer");
 
                     b.Property<string>("ImageUrl")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<bool>("IsAvailable")
@@ -392,69 +380,6 @@ namespace FoodDelivery.Migrations
                     b.ToTable("RefreshTokens");
                 });
 
-            modelBuilder.Entity("FoodDelivery.Entities.RestaurantProfile", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Address")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<TimeSpan>("CloseTime")
-                        .HasColumnType("interval");
-
-                    b.Property<string>("ClosingMessage")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool>("IsOpen")
-                        .HasColumnType("boolean");
-
-                    b.Property<double>("Latitude")
-                        .HasColumnType("double precision");
-
-                    b.Property<double>("Longitude")
-                        .HasColumnType("double precision");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<TimeSpan>("OpenTime")
-                        .HasColumnType("interval");
-
-                    b.Property<string>("Phone")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("RestaurantProfiles");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = new Guid("11111111-1111-1111-1111-111111111111"),
-                            Address = "319 Hùng Vương, P. Vĩnh Trung, Q. Thanh Khê, Đà Nẵng",
-                            CloseTime = new TimeSpan(0, 22, 0, 0, 0),
-                            CreatedAt = new DateTime(2026, 1, 22, 9, 20, 57, 514, DateTimeKind.Utc).AddTicks(5655),
-                            IsOpen = true,
-                            Latitude = 16.067771,
-                            Longitude = 108.214287,
-                            Name = "Food Delivery Shop",
-                            OpenTime = new TimeSpan(0, 8, 0, 0, 0),
-                            Phone = "0909123456",
-                            UpdatedAt = new DateTime(2026, 1, 22, 9, 20, 57, 514, DateTimeKind.Utc).AddTicks(5656)
-                        });
-                });
-
             modelBuilder.Entity("FoodDelivery.Entities.Review", b =>
                 {
                     b.Property<Guid>("Id")
@@ -508,23 +433,6 @@ namespace FoodDelivery.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Roles");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = new Guid("10000000-0000-0000-0000-000000000001"),
-                            Name = "Customer"
-                        },
-                        new
-                        {
-                            Id = new Guid("10000000-0000-0000-0000-000000000002"),
-                            Name = "Shipper"
-                        },
-                        new
-                        {
-                            Id = new Guid("10000000-0000-0000-0000-000000000003"),
-                            Name = "Admin"
-                        });
                 });
 
             modelBuilder.Entity("FoodDelivery.Entities.Shipper", b =>
@@ -686,7 +594,7 @@ namespace FoodDelivery.Migrations
                     b.HasOne("FoodDelivery.Entities.Order", "Order")
                         .WithOne("OrderDetail")
                         .HasForeignKey("FoodDelivery.Entities.OrderDetail", "OrderId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("FoodDelivery.Entities.Shipper", "Shipper")
@@ -714,21 +622,21 @@ namespace FoodDelivery.Migrations
 
             modelBuilder.Entity("FoodDelivery.Entities.OrderStatusHistory", b =>
                 {
-                    b.HasOne("FoodDelivery.Entities.User", "ChangeByUser")
-                        .WithMany("OrderStatusHistories")
-                        .HasForeignKey("ChangeByUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.HasOne("FoodDelivery.Entities.Order", "Order")
                         .WithMany("OrderStatusHistories")
                         .HasForeignKey("OrderId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("ChangeByUser");
+                    b.HasOne("FoodDelivery.Entities.User", "User")
+                        .WithMany("OrderStatusHistories")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Order");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("FoodDelivery.Entities.Product", b =>
