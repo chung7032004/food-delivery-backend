@@ -139,4 +139,28 @@ public class CartController : ControllerBase
         }
         return NotFound(result);
     }
+
+    [HttpPost("save")]
+    [Authorize(Roles = "Customer")]
+    public async Task<IActionResult> SaveCart([FromBody] SaveCartRequest? request)
+    {
+        if(!User.TryGetUserId(out Guid userId))
+        {
+            return Unauthorized(Result.Failure("INVALID_TOKEN","Token không hợp lệ hoặc thiếu UserId."));
+        }
+        
+        // Handle null request
+        if (request == null)
+        {
+            request = new SaveCartRequest { Items = new() };
+        }
+        
+        var result = await _cartService.SaveCartAsync(userId, request);
+        if (result.IsSuccess)
+        {
+            return Ok(result);
+        }
+        
+        return BadRequest(result);
+    }
 }

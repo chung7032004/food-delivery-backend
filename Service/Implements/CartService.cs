@@ -212,4 +212,56 @@ public class CartService : ICartService
         return Result.Success();
     }
 
+    public async Task<Result> SaveCartAsync(Guid customerId, SaveCartRequest request)
+    {
+        if (request?.Items == null || !request.Items.Any())
+        {
+            // If empty cart, clear the cart
+            return await DeleteCartAsync(customerId);
+        }
+
+        // Get or create cart
+        var cart = await _cartRepository.GetByCustomerIdAsync(customerId);
+        if (cart == null)
+        {
+            cart = new Cart
+            {
+                CustomerId = customerId,
+                CreatedAt = DateTime.UtcNow
+            };
+            await _cartRepository.AddAsync(cart);
+            await _context.SaveChangesAsync();
+        }
+
+        // Clear existing cart items
+        var existingItems = await _cartItemRepository.GetByCartIdAsync(cart.Id);
+        if (existingItems.Any())
+        {
+            await _cartItemRepository.DeleteRangeAsync(existingItems);
+        }
+
+        // Add new items from request
+        foreach (var itemRequest in request.Items)
+        {
+            if (itemRequest.Quantity <= 0)
+                continue;
+
+            var product = await _productRepository.GetByIdAsync(itemRequest.ProductId);
+            if (product == null || !product.IsAvailable)
+                continue;
+
+            var cartItem = new CartItem
+            {
+                AddedAt = DateTime.UtcNow,
+                CartId = cart.Id,
+                ProductId = itemRequest.ProductId,
+                Quantity = itemRequest.Quantity,
+            };
+            await _cartItemRepository.AddAsync(cartItem);
+        }
+
+        await _context.SaveChangesAsync();
+        return Result.Success();
+    }
+
 }

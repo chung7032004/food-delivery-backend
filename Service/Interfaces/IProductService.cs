@@ -3,7 +3,7 @@ namespace FoodDelivery.Service.Implements
 {
     public interface IProductService
     {
-        Task<IEnumerable<ProductResponeDto>> GetAllProductsAsync();
+        Task<IEnumerable<ProductResponeDto>> GetAllProductsAsync(Guid? categoryId = null, string? searchQuery = null);
         Task<IEnumerable<ProductResponeDto>> GetFeaturedProductsAsync();
         Task<ProductResponeDto?> GetProductByIdAsync(Guid productId);
         Task<ProductResponeDto> CreateProductAsync(ProductCreateDto productCreateDto);

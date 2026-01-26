@@ -17,11 +17,13 @@ using Microsoft.AspNetCore.Mvc;
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAllProducts()
-            => Ok(await _productService.GetAllProductsAsync());
+        public async Task<IActionResult> GetAllProducts([FromQuery] Guid? categoryId, [FromQuery] string? q)
+            => Ok(await _productService.GetAllProductsAsync(categoryId, q));
+        
         [HttpGet("featured")]
         public async Task<IActionResult> GetFeaturedProducts()
             => Ok(await _productService.GetFeaturedProductsAsync());
+        
         [HttpGet("{productId}")]
         public async Task<IActionResult> GetProductById(Guid productId)
         {

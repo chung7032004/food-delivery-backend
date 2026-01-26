@@ -18,9 +18,26 @@ namespace FoodDelivery.Service.Implements
             _unitOfWork = unitOfWork;
         }
 
-        public async Task<IEnumerable<ProductResponeDto>> GetAllProductsAsync()
+        public async Task<IEnumerable<ProductResponeDto>> GetAllProductsAsync(Guid? categoryId = null, string? searchQuery = null)
         {
             var products = await _productRepo.GetAllAsync();
+            
+            // Filter by category if provided
+            if (categoryId.HasValue)
+            {
+                products = products.Where(p => p.CategoryId == categoryId.Value).ToList();
+            }
+            
+            // Filter by search query if provided
+            if (!string.IsNullOrWhiteSpace(searchQuery))
+            {
+                var lowerQuery = searchQuery.ToLower();
+                products = products.Where(p => 
+                    p.Name.ToLower().Contains(lowerQuery) || 
+                    (p.Category != null && p.Category.Name.ToLower().Contains(lowerQuery))
+                ).ToList();
+            }
+            
             return products
                 .OrderBy(p => p.DisplayOrder)
                 .Select(MapToDto);
