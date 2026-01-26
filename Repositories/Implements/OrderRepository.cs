@@ -27,7 +27,8 @@ public class OrderRepository : IOrderRepository
                 CreatedAt = o.CreatedAt,
                 TotalAmount = o.TotalAmount,
                 ShippingFee = o.ShippingFee,
-                CurrentStatus = o.OrderDetail.Status
+                CurrentStatus = o.OrderDetail.Status,
+                EstimatedDeliveryTime = o.OrderDetail.EstimatedDeliveryTime
             })
             .ToListAsync();
     }
@@ -50,6 +51,7 @@ public class OrderRepository : IOrderRepository
         return await _context.Orders
             .Include(o=>o.OrderDetail)
             .Include(o=>o.OrderItems)
+            .Include(o => o.OrderStatusHistories)
             .FirstOrDefaultAsync(o=>o.Id == orderId);
     }
     public async Task AddAsync(Order order)

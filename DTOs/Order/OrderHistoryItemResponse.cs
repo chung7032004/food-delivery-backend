@@ -6,5 +6,6 @@ public class OrderHistoryItemResponse
     public DateTime CreatedAt { get; set; }
     public decimal TotalAmount { get; set; }
     public decimal ShippingFee {get; set;}
+    public DateTime? EstimatedDeliveryTime {get; set;}
     public OrderStatus CurrentStatus { get; set; }
 }

@@ -19,33 +19,40 @@ public class CartService : ICartService
         _context = context;
         _productRepository = productRepository;
     } 
-    public async Task<Result<CartResponse>> GetCartAsync (Guid customerId)
+    public async Task<Result<PagedResponse<CartItemDto>>> GetCartAsync (Guid customerId, int page, int pageSize)
     {
-        var cart = await _cartRepository.GetCartWithItemsByCustomerIdAsync(customerId);
+        pageSize = pageSize > 100 ? 100 : pageSize < 1 ? 10 : pageSize;
+        page = page < 1 ? 1 : page;
+        var cart = await _cartRepository.GetCartWithItemsByCustomerIdAsync(customerId, page, pageSize);
         if(cart == null)
         {
-            return Result<CartResponse>.Failure("CART_NOT_FOUND","Không tìm thấy giỏ hàng");
+            return Result<PagedResponse<CartItemDto>>.Failure("CART_NOT_FOUND","Không tìm thấy giỏ hàng");
         }
-        var response = new CartResponse
+        var items = cart.CartItems.Select(ci => new CartItemDto
         {
-            CustomerId = cart.CustomerId,
-            CreatedAt = cart.CreatedAt,
-            UpdatedAt =cart.UpdatedAt,
-            CartItems = cart.CartItems.Select(ci=> new CartItemDto
-            {
-                Id = ci.Id,
-                ProductId = ci.ProductId,
-                Quantity = ci.Quantity,
-                CategoryId = ci.Product.CategoryId,
-                CategoryName = ci.Product.Category.Name,
-                Name = ci.Product.Name,
-                Price = ci.Product.Price,
-                ImageUrl = ci.Product.ImageUrl,
-                AddedAt = ci.AddedAt, 
-                UpdatedAt = ci.UpdatedAt,
-            }).ToList()
-        };
-        return Result<CartResponse>.Success(response);
+            Id = ci.Id,
+            ProductId = ci.Product.Id,
+            ProductName = ci.Product.Name,
+
+            CategoryId = ci.Product.Category.Id,
+            CategoryName = ci.Product.Category.Name,
+
+            Quantity = ci.Quantity,
+            Price = ci.Product.Price,
+            ImageUrl = ci.Product.ImageUrl
+        }).ToList();
+        var totalItems = await _cartItemRepository.CountByCustomerIdAsync(customerId);
+        var responseMeta = new PaginationMeta(
+            Page:page,
+            PageSize : items.Count,
+            TotalCount : totalItems,
+            TotalPages : (int)Math.Ceiling((double)totalItems/pageSize)
+        );
+        var response = new PagedResponse<CartItemDto>(
+            Meta : responseMeta,
+            Data : items
+        );
+        return Result<PagedResponse<CartItemDto>>.Success(response);
     }
     public async Task<Result> AddCartItemAsync (Guid customerId, CartItemRequest cartItemRequest)
     {   

@@ -40,19 +40,25 @@ public class CartItemRepository : ICartItemRepository
     {
         await _context.CartItems.AddAsync(item);
     }
-    public Task UpdateAsync(CartItem item)
+    public async Task UpdateAsync(CartItem item)
     {
         _context.CartItems.Update(item);
-        return Task.CompletedTask;
+        await Task.CompletedTask;
     }
-    public Task DeleteAsync(CartItem item)
+    public async  Task DeleteAsync(CartItem item)
     {
         _context.CartItems.Remove(item);
-        return Task.CompletedTask;
+        await Task.CompletedTask;
     }
-    public Task DeleteRangeAsync(IEnumerable<CartItem> items)
+    public async Task DeleteRangeAsync(IEnumerable<CartItem> items)
     {
         _context.CartItems.RemoveRange(items);
-        return Task.CompletedTask;
+        await Task.CompletedTask;
+    }
+    public async Task<int> CountByCustomerIdAsync(Guid customerId)
+    {
+        return await _context.CartItems
+            .Where(ci => ci.Cart.CustomerId == customerId)
+            .CountAsync();
     }
 }

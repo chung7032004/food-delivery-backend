@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -10,9 +11,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FoodDelivery.Migrations
 {
     [DbContext(typeof(FoodContext))]
-    partial class FoodContextModelSnapshot : ModelSnapshot
+    [Migration("20260122092057_AddDataForRestaurant")]
+    partial class AddDataForRestaurant
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -462,17 +465,13 @@ namespace FoodDelivery.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("Comment")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("CustomerId")
                         .HasColumnType("uuid");
-
-                    b.Property<bool>("IsHidden")
-                        .HasColumnType("boolean");
 
                     b.Property<Guid>("OrderItemId")
                         .HasColumnType("uuid");
@@ -508,55 +507,6 @@ namespace FoodDelivery.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Roles");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = new Guid("10000000-0000-0000-0000-000000000001"),
-                            Name = "Customer"
-                        },
-                        new
-                        {
-                            Id = new Guid("10000000-0000-0000-0000-000000000002"),
-                            Name = "Shipper"
-                        },
-                        new
-                        {
-                            Id = new Guid("10000000-0000-0000-0000-000000000003"),
-                            Name = "Admin"
-                        });
-                });
-
-            modelBuilder.Entity("FoodDelivery.Entities.Shipper", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("IsAvailable")
-                        .HasColumnType("boolean");
-
-                    b.Property<int>("TotalDeliveredOrders")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId")
-                        .IsUnique();
-
-                    b.ToTable("Shipper");
                 });
 
             modelBuilder.Entity("FoodDelivery.Entities.User", b =>
@@ -689,8 +639,8 @@ namespace FoodDelivery.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("FoodDelivery.Entities.Shipper", "Shipper")
-                        .WithMany("Orders")
+                    b.HasOne("FoodDelivery.Entities.User", "Shipper")
+                        .WithMany()
                         .HasForeignKey("ShipperId")
                         .OnDelete(DeleteBehavior.Restrict);
 
@@ -780,17 +730,6 @@ namespace FoodDelivery.Migrations
                     b.Navigation("Product");
                 });
 
-            modelBuilder.Entity("FoodDelivery.Entities.Shipper", b =>
-                {
-                    b.HasOne("FoodDelivery.Entities.User", "User")
-                        .WithOne("Shipper")
-                        .HasForeignKey("FoodDelivery.Entities.Shipper", "UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("FoodDelivery.Entities.UserRole", b =>
                 {
                     b.HasOne("FoodDelivery.Entities.Role", "Role")
@@ -848,11 +787,6 @@ namespace FoodDelivery.Migrations
                     b.Navigation("UserRoles");
                 });
 
-            modelBuilder.Entity("FoodDelivery.Entities.Shipper", b =>
-                {
-                    b.Navigation("Orders");
-                });
-
             modelBuilder.Entity("FoodDelivery.Entities.User", b =>
                 {
                     b.Navigation("Addresses");
@@ -866,8 +800,6 @@ namespace FoodDelivery.Migrations
                     b.Navigation("RefreshTokens");
 
                     b.Navigation("Reviews");
-
-                    b.Navigation("Shipper");
 
                     b.Navigation("UserRoles");
                 });

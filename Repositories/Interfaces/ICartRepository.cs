@@ -4,7 +4,7 @@ namespace FoodDelivery.Repositories.Interfaces;
 public interface ICartRepository
 {
     Task<Cart?> GetByCustomerIdAsync(Guid customerId);
-    Task<Cart?> GetCartWithItemsByCustomerIdAsync(Guid customerId);
+    Task<Cart?> GetCartWithItemsByCustomerIdAsync(Guid customerId, int page, int pageSize);
     Task<Cart?> GetByIdAsync(Guid cartId);
     Task AddAsync (Cart cart);
     Task UpdateAsync (Cart cart);

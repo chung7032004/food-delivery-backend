@@ -5,8 +5,9 @@ using FoodDelivery.Service.Implementations;
 using FoodDelivery.Service.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 
-namespace FoodDelivery.Controller;
+namespace FoodDelivery.Controllers;
 
 [ApiController]
 [Route("api/[Controller]")]
@@ -21,13 +22,13 @@ public class CartController : ControllerBase
     
     [HttpGet]
     [Authorize(Roles = "Customer")]
-    public async Task<IActionResult> GetCart()
+    public async Task<IActionResult> GetCart([FromQuery] int page = 1, int pageSize = 10)
     {
         if(!User.TryGetUserId(out Guid userId))
         {
-             return Unauthorized(Result<CartResponse>.Failure("INVALID_TOKEN","Token không hợp lệ hoặc thiếu UserId."));
+             return Unauthorized(Result<PagedResponse<CartItemDto>>.Failure("INVALID_TOKEN","Token không hợp lệ hoặc thiếu UserId."));
         }
-        var result = await _cartService.GetCartAsync(userId);
+        var result = await _cartService.GetCartAsync(userId, page, pageSize);
         if (result.IsSuccess)
         {
             return Ok(result);
