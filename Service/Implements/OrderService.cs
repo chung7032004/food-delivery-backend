@@ -101,11 +101,6 @@ public class OrderService :IOrderService
         }
     private double CalculateDistance(double lat1, double lon1, double lat2, double lon2)
     {
-        Console.WriteLine(lat1);
-        Console.WriteLine(lon1);
-        Console.WriteLine(lat2);
-        Console.WriteLine(lon2);
-
         var R = 6371; //Bán kính trái đất;
         var dLat = (lat1 - lat2) * (Math.PI/180);
         var dLon = (lon1 - lon2) * (Math.PI/180);
@@ -327,16 +322,14 @@ public class OrderService :IOrderService
         var orderStatusHistory = new OrderStatusHistory
         {
             OrderId = orderId,
-            // ChangeByUserId = customerId,
+            ChangeByUserId = customerId,
             ChangedAt = DateTime.UtcNow,
             Note = request.Note ?? string.Empty,
+            ActionBy = OrderActionBy.Customer
         };
         if (request.IsAccepted)
         {
-            var itemsToRemove = order.OrderItems.Where(oi=> !oi.IsRemoved).ToList();
-            if (!itemsToRemove.Any()) {
-                return Result.Failure("DATA_ERROR", "Không tìm thấy món hàng nào cần loại bỏ.");
-            }
+            var itemsToRemove = order.OrderItems.Where(oi=> oi.IsRemoved).ToList();
             foreach(var item in itemsToRemove)
             {
                 order.OrderItems.Remove(item);
@@ -347,14 +340,14 @@ public class OrderService :IOrderService
                 orderStatusHistory.Status = OrderStatus.Cancelled;
                 orderStatusHistory.ActionBy = OrderActionBy.System;
                 orderStatusHistory.Note = "Hủy tự động do không còn món nào khả dụng.";
-                await _orderRepository.AddOrderHistoryAsync(orderStatusHistory);
-                await _context.SaveChangesAsync();
-                return Result.Failure("EMPTY_ORDER","Đơn hàng đã bị hủy vì không còn món nào.");
             }
-            orderStatusHistory.Status = OrderStatus.Confirmed;
-            order.OrderDetail.Status = OrderStatus.Confirmed;
-            orderStatusHistory.ActionBy = OrderActionBy.Customer;
-            order.TotalAmount = order.OrderItems.Sum(oi=> oi.Quantity*oi.UnitPrice);
+            else
+            {
+                orderStatusHistory.Status = OrderStatus.Confirmed;
+                order.OrderDetail.Status = OrderStatus.Confirmed;
+                orderStatusHistory.ActionBy = OrderActionBy.Customer;
+                order.TotalAmount = order.OrderItems.Sum(oi=> oi.Quantity*oi.UnitPrice);
+            }    
         }
         else
         {
@@ -363,9 +356,16 @@ public class OrderService :IOrderService
             orderStatusHistory.ActionBy = OrderActionBy.Customer;
             orderStatusHistory.Note = request.Note ?? "Khách hàng không đồng ý với thay đổi từ nhà hàng.";
         }
-        await _orderRepository.AddOrderHistoryAsync(orderStatusHistory);
-        await _context.SaveChangesAsync();
-        return Result.Success();
+       try 
+        {
+            await _orderRepository.AddOrderHistoryAsync(orderStatusHistory);
+            await _context.SaveChangesAsync();
+            return Result.Success();
+        }
+        catch (Exception ex)
+        {
+            return Result.Failure("DB_ERROR", "Lỗi lưu dữ liệu: " + ex.Message);
+        }
     }
     public async Task<Result<PagedResponse<OrderAdminSummaryResponse>>> GetOrderAdminAsync(OrderFilterModel filter)
     {
@@ -376,18 +376,22 @@ public class OrderService :IOrderService
         }
         if (!string.IsNullOrWhiteSpace(filter.SearchCode))
         {
-            string search = filter.SearchCode.Trim().ToLower();
-            query = query.Where(o=>o.OrderCode.ToLower().Contains(search) 
-                || o.Customer.FullName.ToLower().Contains(search) );
+            var search = $"%{filter.SearchCode.Trim()}%";
+            query = query.Where(o =>
+            EF.Functions.ILike(o.OrderCode, search) ||
+            EF.Functions.ILike(o.Customer.FullName, search)
+            );
         }
         if (filter.FromDate.HasValue)
         {
-            query = query.Where(o=>o.CreatedAt >= filter.FromDate.Value);
+            var fromDateUtc = DateTime.SpecifyKind(filter.FromDate.Value, DateTimeKind.Utc);
+            query = query.Where(o=>o.CreatedAt >= fromDateUtc);
         }
         if (filter.ToDate.HasValue)
         {
-            var EndOfDay = filter.ToDate.Value.AddDays(1).AddTicks(-1);
-            query = query.Where(o=>o.CreatedAt <= EndOfDay);
+            var toDateUtc = DateTime.SpecifyKind(filter.ToDate.Value, DateTimeKind.Utc)
+                            .AddDays(1).AddTicks(-1);
+            query = query.Where(o=>o.CreatedAt <= toDateUtc);
         }
         int totalCount = await query.CountAsync();
         var pageSize = filter.PageSize > 100 ? 100 : filter.PageSize < 1 ? 10 : filter.PageSize;
@@ -471,7 +475,7 @@ public class OrderService :IOrderService
             ActionBy = OrderActionBy.Admin,
             ChangeByUserId = adminId,
             ChangedAt = DateTime.UtcNow,
-            Note = "Một số món ăn đã hết hàng, chờ khách hàng quyết định.",
+            Note = request.Note ?? "Một số món ăn đã hết hàng, chờ khách hàng quyết định.",
             OrderId = orderId,
             Status = OrderStatus.WaitingCustomerDecision
         };
