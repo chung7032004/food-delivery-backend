@@ -1,7 +1,6 @@
 using System.Security.Claims;
 using FoodDelivery.Common;
 using FoodDelivery.DTOs.Order;
-using FoodDelivery.Entities;
 using FoodDelivery.Extensions;
 using FoodDelivery.Service.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -10,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace FoodDelivery.Controllers;
 
 [ApiController]
-[Route("api/[Controller]")]
+[Route("api/")]
 public class OrdersController : ControllerBase
 {
     private readonly IOrderService _orderService;
@@ -18,7 +17,7 @@ public class OrdersController : ControllerBase
     {
         _orderService = orderService;
     }
-    [HttpPost("buy-now")]
+    [HttpPost("orders/buy-now")]
     [Authorize(Roles = "Customer")]
     public async Task<IActionResult> CreateOrderBuyNow([FromBody] BuyNowRequestDto request)
     {
@@ -44,7 +43,7 @@ public class OrdersController : ControllerBase
         return CreatedAtAction(nameof(GetOrderDetail),new { orderId = result.Data!.OrderId},result);
     }
 
-    [HttpPost("checkout")]
+    [HttpPost("orders/checkout")]
     [Authorize(Roles = "Customer")]
     public async Task<IActionResult> CheckoutCartItems([FromBody] CheckoutRequestDto request)
     {
@@ -71,7 +70,7 @@ public class OrdersController : ControllerBase
         return CreatedAtAction(nameof(GetOrderDetail),new { orderId = result.Data!.OrderId},result);
     }
 
-    [HttpGet("history")]
+    [HttpGet("orders/history")]
     [Authorize(Roles = "Customer")]
     public async Task<IActionResult> GetMyOrderHistory([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
@@ -84,7 +83,7 @@ public class OrdersController : ControllerBase
             return BadRequest(result); 
         return Ok(result);
     }
-    [HttpGet("{orderId}")]
+    [HttpGet("orders/{orderId}")]
     [Authorize(Roles = "Admin,Customer")]
     public async Task<IActionResult> GetOrderDetail(Guid orderId)
     {
@@ -104,7 +103,7 @@ public class OrdersController : ControllerBase
             };
         return Ok(result);
     }
-    [HttpPost("{orderId}/cancel")]
+    [HttpPost("orders/{orderId}/cancel")]
     [Authorize(Roles ="Customer")]
     public async Task<IActionResult> CancelOrderByCustomer(Guid orderId, [FromBody] CancelOrderRequestDto request)
     {
@@ -119,7 +118,7 @@ public class OrdersController : ControllerBase
         }
         return BadRequest(result);
     }
-    [HttpPost("{orderId}/respond-proposal")]
+    [HttpPost("orders/{orderId}/respond-proposal")]
     [Authorize(Roles = "Customer")]
     public async Task<IActionResult> RespondToProposal(Guid orderId , [FromBody] OrderProposalResponseDto request)
     {
@@ -142,14 +141,14 @@ public class OrdersController : ControllerBase
         };
     }
     
-    [HttpGet("admin")]
+    [HttpGet("admin/orders")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetAdminOrder([FromQuery] OrderFilterModel filter)
     {
         var result = await _orderService.GetOrderAdminAsync(filter);
         return Ok(result);
     }
-    [HttpPost("api/admin/order/{orderId}/confirm")]
+    [HttpPost("admin/orders/{orderId}/confirm")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> ConfirmOrder(Guid orderId)
     {
@@ -169,7 +168,7 @@ public class OrdersController : ControllerBase
         }
         return Ok(result);
     }
-    [HttpPost("api/admin/order/{orderId}out-of-stock")]
+    [HttpPost("admin/orders/{orderId}/out-of-stock")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> OutOfStock(Guid orderId, [FromBody] OutOfStockRequest request)
     {
@@ -190,7 +189,7 @@ public class OrdersController : ControllerBase
         }
         return Ok(result);
     }
-    [HttpPost("api/admin/order/{orderId}/start-preparing")]
+    [HttpPost("admin/orders/{orderId}/start-preparing")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> StartPreparing(Guid orderId)
     {
@@ -210,9 +209,29 @@ public class OrdersController : ControllerBase
         }
         return Ok(result);
     }
-    [HttpPost("api/admin/order/{orderId}/cancel")]
+    [HttpPost("admin/orders/{orderId}/final-preparing")]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> MarkAsReady(Guid orderId, [FromBody] CancelOrderRequestDto request)
+    public async Task<IActionResult> MarkAsReady(Guid orderId)
+    {
+        if(!User.TryGetUserId(out Guid adminId))
+        {
+            return Unauthorized(Result.Failure("INVALID_TOKEN","Phiên dùng không hợp lệ."));
+        }
+        var result = await _orderService.MarkAsReadyAsync(adminId,orderId);
+        if (!result.IsSuccess)
+        {
+            return result.ErrorCode switch
+            {
+                "ORDER_NOT_FOUND" => NotFound(result),
+                "INVALID_STATUS" => BadRequest(result),
+                _ => BadRequest(result)
+            };
+        }
+        return Ok(result);
+    }
+    [HttpPost("admin/orders/{orderId}/cancel")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> CancelByAdmin(Guid orderId, [FromBody] CancelOrderRequestDto request)
     {
         if(!User.TryGetUserId(out Guid adminId))
         {

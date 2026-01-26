@@ -51,6 +51,7 @@ public class OrderRepository : IOrderRepository
         return await _context.Orders
             .Include(o=>o.OrderDetail)
             .Include(o=>o.OrderItems)
+            .Include(o => o.OrderStatusHistories)
             .FirstOrDefaultAsync(o=>o.Id == orderId);
     }
     public async Task AddAsync(Order order)
