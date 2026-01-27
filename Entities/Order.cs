@@ -17,7 +17,6 @@ namespace FoodDelivery.Entities
         public virtual OrderDetail OrderDetail {get; set;} = null!; 
         public virtual ICollection<OrderItem> OrderItems {get; set;} = new List<OrderItem>();
         public virtual ICollection<OrderStatusHistory> OrderStatusHistories {get; set;} = new List<OrderStatusHistory>();
-        
-
+        public OrderStatus Status { get; internal set; }
     }
 }

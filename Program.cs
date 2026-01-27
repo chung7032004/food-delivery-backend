@@ -1,5 +1,6 @@
 using FoodDelivery.Repositories;
 using FoodDelivery.Repositories.Implementations;
+using FoodDelivery.Repositories.Implements;
 using FoodDelivery.Repositories.Interfaces;
 using FoodDelivery.Service.Implementations;
 using FoodDelivery.Service.Implements;
@@ -111,6 +112,7 @@ builder.Services.AddScoped<IReviewService,ReviewService>();
 // Review service
 builder.Services.AddScoped<FoodDelivery.Service.Interfaces.IReviewService, FoodDelivery.Service.Implements.ReviewService>();
 builder.Services.AddScoped<IShipperService, ShipperService>();
+builder.Services.AddScoped<IShipperRepository, ShipperRepository>();
 
 builder.Services.AddAuthorization();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(option =>
