@@ -98,6 +98,45 @@ public class OrderService :IOrderService
             await _context.SaveChangesAsync();
         }
         return result;
+    }
+
+    public async Task<Result<ShippingFeeResponseDto>> CalculateShippingFeeAsync(Guid addressId)
+    {
+        var address = await _addressRepository.GetByIdAsync(addressId);
+        if(address == null)
+        {
+            return Result<ShippingFeeResponseDto>.Failure("ADDRESS_NOT_FOUND","Không tìm thấy địa chỉ");
+        }
+        var restaurant = await _restaurantRepository.GetMyRestaurant();
+        if(restaurant == null)
+        {
+            return Result<ShippingFeeResponseDto>.Failure("RESTAURANT_NOT_CONFIGURED","Cửa hàng chưa được cấu hình.");
+        }
+        
+        var distance = CalculateDistance(restaurant.Latitude, restaurant.Longitude, address.Latitude, address.Longitude);
+        
+        if (distance > 40)
+        {
+            return Result<ShippingFeeResponseDto>.Failure("TOO_FAR", "Địa chỉ giao hàng quá xa (tối đa 40km)");
+        }
+        
+        // Tính phí vận chuyển: Base 5,000 VND + 3,000 VND/km
+        decimal shippingFee = 5000 + (decimal)distance * 3000;
+        
+        // Làm tròn đến 1000 VND gần nhất
+        shippingFee = Math.Ceiling(shippingFee / 1000) * 1000;
+        
+        // Estimate delivery time: 10 mins base + 3 mins per km
+        int estimatedMinutes = (int)(10 + (distance * 3));
+        
+        var response = new ShippingFeeResponseDto
+        {
+            ShippingFee = shippingFee,
+            Distance = distance,
+            EstimatedMinutes = estimatedMinutes
+        };
+        
+        return Result<ShippingFeeResponseDto>.Success(response);
         }
     private double CalculateDistance(double lat1, double lon1, double lat2, double lon2)
     {
@@ -132,15 +171,16 @@ public class OrderService :IOrderService
         {
             return Result<CreateOrderResponseDto>.Failure("TOO_FAR", "Địa chỉ giao hàng quá xa (tối đa 40km)");
         }
-        decimal shippingFee = 15000;
-        if(distance > 3)
-        {
-            shippingFee += (decimal)(distance - 3) * 5000;
-        }
-        shippingFee = Math.Ceiling(shippingFee/1000)*1000;
-        double estimated = 10 + (items.Count -1 ) *2 + (distance * 3);
+        
+        // Tính phí vận chuyển: Base 5,000 VND + 3,000 VND/km
+        decimal shippingFee = 5000 + (decimal)distance * 3000;
+        
+        // Làm tròn đến 1000 VND gần nhất
+        shippingFee = Math.Ceiling(shippingFee / 1000) * 1000;
+        
+        double estimated = 10 + (items.Count - 1) * 2 + (distance * 3);
         DateTime estimatedDeliveryTime = DateTime.UtcNow.AddMinutes(estimated);
-        Console.WriteLine("shippingFee",shippingFee);
+        Console.WriteLine($"Shipping Fee: {shippingFee}, Distance: {distance}km");
         var order = new Order()
         {
             CustomerId = customerId,
@@ -166,6 +206,7 @@ public class OrderService :IOrderService
         }
         order.OrderDetail = new OrderDetail
         {
+            OrderId = order.Id,
             Status = OrderStatus.Pending,
             PaymentMethod = PaymentMethod.Cash,
             PaymentStatus = PaymentStatus.Unpaid,
@@ -177,6 +218,7 @@ public class OrderService :IOrderService
           ChangeByUserId = customerId,
           Status = OrderStatus.Pending,
           ChangedAt = DateTime.UtcNow,
+          ActionBy = OrderActionBy.Customer,
           Note = "Bạn đã tạo đơn hàng."
 
         });

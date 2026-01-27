@@ -21,3 +21,10 @@ public enum PaymentStatus
     Paid = 1,
     Refunded = 2
 }
+public enum OrderActionBy
+{
+    System = 0,
+    Customer = 1,
+    Admin = 2,
+    Shipper = 3
+}
