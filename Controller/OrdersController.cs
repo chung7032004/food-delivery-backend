@@ -70,6 +70,30 @@ public class OrdersController : ControllerBase
         return CreatedAtAction(nameof(GetOrderDetail),new { orderId = result.Data!.OrderId},result);
     }
 
+    [HttpGet("orders/shipping-fee")]
+    [Authorize(Roles = "Customer")]
+    public async Task<IActionResult> CalculateShippingFee([FromQuery] Guid addressId, [FromQuery] int itemCount = 1)
+    {
+        if(!User.TryGetUserId(out Guid customerId))
+        {
+            return Unauthorized(Result<ShippingFeeResponseDto>.Failure("INVALID_TOKEN","Phiên dùng không hợp lệ."));
+        }
+        
+        var result = await _orderService.CalculateShippingFeeAsync(addressId);
+        if (!result.IsSuccess)
+        {
+            return result.ErrorCode switch
+            {
+                "ADDRESS_NOT_FOUND" => NotFound(result),
+                "RESTAURANT_NOT_CONFIGURED" => Conflict(result),
+                "TOO_FAR" => BadRequest(result),
+                _ => BadRequest(result),
+            };
+        }
+        
+        return Ok(result);
+    }
+
     [HttpGet("orders/history")]
     [Authorize(Roles = "Customer")]
     public async Task<IActionResult> GetMyOrderHistory([FromQuery] int page = 1, [FromQuery] int pageSize = 10)

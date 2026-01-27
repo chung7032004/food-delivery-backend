@@ -6,6 +6,7 @@ public interface IOrderService
 {
     Task<Result<CreateOrderResponseDto>> BuyNowAsync(Guid customerId,BuyNowRequestDto request);
     Task<Result<CreateOrderResponseDto>> CheckoutAsync(Guid customerId,CheckoutRequestDto request);
+    Task<Result<ShippingFeeResponseDto>> CalculateShippingFeeAsync(Guid addressId);
     Task<Result<PagedResponse<OrderHistoryItemResponse>>> GetMyOrderAsync(Guid customerId, int page, int pageSize);
     Task<Result<OrderDetailResponse>> GetOrderDetailAsync(Guid userId,List<string> roles,Guid orderId);
     Task<Result> CancelOrderByCustomerAsync(Guid userId, Guid orderId , CancelOrderRequestDto cancelOrderRequestDto);
