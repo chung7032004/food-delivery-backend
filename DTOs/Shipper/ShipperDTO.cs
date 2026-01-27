@@ -5,4 +5,5 @@ namespace FoodDelivery.DTOs
         public Guid OrderId { get; set; }
         public string? Reason { get; set; } // Chỉ dùng khi giao thất bại
     }
+    
 }

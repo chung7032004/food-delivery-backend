@@ -1,56 +1,68 @@
 using FoodDelivery.Entities;
 using FoodDelivery.DTOs;
 using FoodDelivery.Service.Interfaces;
-using Microsoft.EntityFrameworkCore;
+using FoodDelivery.Repositories.Interfaces;
 
 namespace FoodDelivery.Service.Implements
 {
     public class ShipperService : IShipperService
     {
-        //Viết repository cho service shipper 
-        private readonly FoodContext _context;
-        public ShipperService(FoodContext context) { _context = context; }
+
+        private readonly IShipperRepository _shipperRepository;
+        public ShipperService(IShipperRepository shipperRepository) { _shipperRepository = shipperRepository; }
+
         public async Task<bool> ConfirmPickUpAsync(Guid orderId, Guid userId)
         {
-            //Lấy shipperId thông qua userId,
-            var detail = await _context.OrderDetails.FirstOrDefaultAsync(x => x.OrderId == orderId);
-            if (detail == null)
-                return false;
-            if (detail.Status != OrderStatus.Preparing && detail.Status != OrderStatus.ReadyForPickup)
-                return false;
-            if (detail.ShipperId != null)
-                return false;
-            detail.ShipperId = userId; // cập nhật lại là shipperId cho đúng 
-            detail.Status = OrderStatus.Shipping;
-            await _context.SaveChangesAsync();
-            return true;
+            var orderDetail = await _shipperRepository.GetOrderDetailByIdAsync(orderId);
+            if (orderDetail == null) return false;
+            orderDetail.Status = OrderStatus.Shipping;
+            orderDetail.ShipperId = userId;
+            _shipperRepository.UpdateOrderDetail(orderDetail);
+            await _shipperRepository.AddStatusHistoryAsync(new OrderStatusHistory { OrderId = orderId, Status = OrderStatus.Shipping, ChangeByUserId = userId, ChangedAt = DateTime.Now });
+            return await _shipperRepository.SaveChangesAsync();
         }
 
         public async Task<bool> MarkSuccessAsync(Guid orderId)
         {
-            var detail = await _context.OrderDetails.FirstOrDefaultAsync(x => x.OrderId == orderId);
-            if (detail == null)
-                return false;
-
-            detail.Status = OrderStatus.Completed;
-            detail.ActualDeliveryTime = DateTime.Now;
-            await _context.SaveChangesAsync();
-            return true;
+            var orderDetail = await _shipperRepository.GetOrderDetailByIdAsync(orderId);
+            if (orderDetail == null) return false;
+            orderDetail.Status = OrderStatus.Completed;
+            orderDetail.ActualDeliveryTime = DateTime.Now;
+            _shipperRepository.UpdateOrderDetail(orderDetail);
+            await _shipperRepository.AddStatusHistoryAsync(new OrderStatusHistory { OrderId = orderId, Status = OrderStatus.Completed, ChangedAt = DateTime.Now });
+            return await _shipperRepository.SaveChangesAsync();
         }
 
         public async Task<bool> MarkFailedAsync(Guid orderId, string reason, Guid? cancelledBy = null)
         {
-            var detail = await _context.OrderDetails.FirstOrDefaultAsync(x => x.OrderId == orderId);
-            if (detail == null)
-                return false;
+            var orderDetail = await _shipperRepository.GetOrderDetailByIdAsync(orderId);
+            if (orderDetail == null) return false;
+            orderDetail.Status = OrderStatus.Cancelled;
+            orderDetail.CancelReason = reason ?? string.Empty;
+            if (cancelledBy.HasValue) orderDetail.CancelledByUserId = cancelledBy.Value;
+            _shipperRepository.UpdateOrderDetail(orderDetail);
+            await _shipperRepository.AddStatusHistoryAsync(new OrderStatusHistory { OrderId = orderId, Status = OrderStatus.Cancelled, ChangeByUserId = cancelledBy ?? Guid.Empty, ChangedAt = DateTime.Now });
+            return await _shipperRepository.SaveChangesAsync();
+        }
 
-            detail.Status = OrderStatus.Cancelled;
-            detail.CancelReason = reason ?? string.Empty;
-            if (cancelledBy.HasValue)
-                detail.CancelledByUserId = cancelledBy.Value;
+        public async Task<List<User>> GetAllShippersAsync() => await _shipperRepository.GetAllShippersAsync();
+        public async Task<User?> GetShipperByIdAsync(Guid userId) => await _shipperRepository.GetShipperByIdAsync(userId);
+        public async Task<List<OrderStatusHistory>> GetShipperHistoryAsync(Guid userId) => await _shipperRepository.GetShipperHistoryAsync(userId);
 
-            await _context.SaveChangesAsync();
-            return true;
+        public async Task<bool> ToggleShipperStatusAsync(Guid userId, bool isActive)
+        {
+            var user = await _shipperRepository.GetShipperByIdAsync(userId);
+            if (user == null) return false;
+            user.IsActive = isActive;
+            return await _shipperRepository.SaveChangesAsync();
+        }
+
+        public async Task<bool> AssignShipperRoleAsync(Guid userId)
+        {
+            var role = await _shipperRepository.GetRoleByNameAsync("Shipper");
+            if (role == null) return false;
+            await _shipperRepository.AddUserRoleAsync(new UserRole { UserId = userId, RoleId = role.Id });
+            return await _shipperRepository.SaveChangesAsync();
         }
         //1. Xem danh sách đơn có thể nhận
         //2. Xem đơn đang giao của mình 

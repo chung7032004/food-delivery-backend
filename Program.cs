@@ -1,17 +1,18 @@
-    using FoodDelivery.Middlewares;
-    using FoodDelivery.Repositories;
-    using FoodDelivery.Repositories.Implementations;
-    using FoodDelivery.Repositories.Interfaces;
-    using FoodDelivery.Service.Implementations;
-    using FoodDelivery.Service.Implements;
-    using FoodDelivery.Service.Interfaces;
-    using Microsoft.AspNetCore.Authentication.JwtBearer;
-    using Microsoft.EntityFrameworkCore;
-    using Microsoft.IdentityModel.Tokens;
-    using System.Text;
-    /*using System.Security.Cryptography;
-    using System.Text;
 
+using FoodDelivery.Middlewares;
+using FoodDelivery.Repositories;
+using FoodDelivery.Repositories.Implementations;
+using FoodDelivery.Repositories.Implements;
+using FoodDelivery.Repositories.Interfaces;
+using FoodDelivery.Service.Implementations;
+using FoodDelivery.Service.Implements;
+using FoodDelivery.Service.Interfaces;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+/*using System.Security.Cryptography;
+using System.Text;
     var password = "12345678";
 
     using var hmac = new HMACSHA512();
@@ -28,8 +29,6 @@
     */
 
     var builder = WebApplication.CreateBuilder(args);
-
-    // Add services to the container.
 
 
     builder.Services.AddControllers();
@@ -111,6 +110,7 @@ builder.Services.AddScoped<IReviewService,ReviewService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IRestaurantService,RestaurantService>();
 builder.Services.AddScoped<IShipperService, ShipperService>();
+builder.Services.AddScoped<IShipperRepository, ShipperRepository>();
 
 builder.Services.AddAuthorization();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(option =>
