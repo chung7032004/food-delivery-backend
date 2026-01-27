@@ -78,7 +78,6 @@ namespace FoodDelivery.Service.Implementations
             }
             
             var user = await _userRepository.GetByEmailAsync(email);
-            
             var fakeHash = new byte[64];
             var fakeSalt = new byte[128];
 

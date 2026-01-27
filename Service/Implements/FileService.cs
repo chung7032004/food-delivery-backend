@@ -6,9 +6,11 @@ namespace FoodDelivery.Service.Implementations;
 public class FileService : IFileService
 {
     private readonly IWebHostEnvironment _environment;
-    public FileService (IWebHostEnvironment webHostEnvironment)
+    private readonly ILogger<FileService> _logger;
+    public FileService (IWebHostEnvironment webHostEnvironment , ILogger<FileService> logger)
     {
         _environment = webHostEnvironment;
+        _logger = logger;
     }
     public async Task <Result<string>> SaveFileAsync(IFormFile  file, string folderName)
     {
@@ -36,31 +38,55 @@ public class FileService : IFileService
                 "File upload không phải là ảnh"
             );
         }
-
-        var contentPath = _environment.WebRootPath;
-        var path = Path.Combine(contentPath,"uploads",folderName);
-
-        if (!Directory.Exists(path))
+        try
         {
-            Directory.CreateDirectory(path);
+            var contentPath = _environment.WebRootPath;
+            var path = Path.Combine(contentPath,"uploads",folderName);
+
+            if (!Directory.Exists(path))
+            {
+                Directory.CreateDirectory(path);
+            }
+
+            var fileName = $"{Guid.NewGuid()}{fileExtension}";
+            var fileNameWithPath = Path.Combine(path,fileName);
+
+            using var stream = new FileStream(fileNameWithPath, FileMode.Create);
+            await file.CopyToAsync(stream);
+
+            var fileUrl = $"/uploads/{folderName}/{fileName}";
+            return Result<string>.Success(fileUrl);
         }
-
-        var fileName = $"{Guid.NewGuid()}{fileExtension}";
-        var fileNameWithPath = Path.Combine(path,fileName);
-
-        using var stream = new FileStream(fileNameWithPath, FileMode.Create);
-        await file.CopyToAsync(stream);
-
-        var fileUrl = $"/uploads/{folderName}/{fileName}";
-        return Result<string>.Success(fileUrl);
+        catch(IOException ex)
+        {
+            return Result<string>.Failure("DISK_ERROR",$"Lỗi hệ thống khi lưu file: {ex.Message}");
+        }
+        catch(UnauthorizedAccessException)
+        {
+            return Result<string>.Failure("PERMISSION_DENIED", "Server không có quyền ghi vào thư mục lưu trữ.");
+        }
+        catch(Exception ex)
+        {
+            return Result<string>.Failure("SERVER_ERROR", $"Đã xảy ra lỗi: {ex.Message}");
+        }
+        
     }
     
     public void DeleteFile(string fileUrl)
     {
-        if (string.IsNullOrEmpty(fileUrl)) return;
-        if (!fileUrl.StartsWith("/uploads/")) return;
-        if (fileUrl.EndsWith("/default.png")) return;
-        var filePath = Path.Combine(_environment.WebRootPath, fileUrl.TrimStart('/'));
-        if (File.Exists(filePath)) File.Delete(filePath);
+        try
+        {
+            if (string.IsNullOrEmpty(fileUrl)) return;
+            if (!fileUrl.StartsWith("/uploads/")) return;
+            if (fileUrl.EndsWith("/default.png")) return;
+            var filePath = Path.Combine(_environment.WebRootPath, fileUrl.TrimStart('/'));
+            if (File.Exists(filePath)) File.Delete(filePath);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,"Lỗi khi xóa file tại: {FileUrl}. Lý do: {Message}", fileUrl, ex.Message);
+        }
+        
     }
+
 }

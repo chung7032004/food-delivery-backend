@@ -5,6 +5,7 @@ public class FoodContext : DbContext
 {
     public FoodContext(DbContextOptions<FoodContext> options ) : base(options) {}
     public DbSet<RestaurantProfile> RestaurantProfiles{get; set;} 
+    public DbSet<Shipper> Shippers{get; set;}
     public DbSet<Address> Addresses{get;set;}
     public DbSet<Cart> Carts{get;set;}
     public DbSet<CartItem> CartItems{get;set;}

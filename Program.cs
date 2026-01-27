@@ -2,7 +2,8 @@
     using FoodDelivery.Repositories;
     using FoodDelivery.Repositories.Implementations;
     using FoodDelivery.Repositories.Interfaces;
-    using FoodDelivery.Service.Implementations;
+using FoodDelivery.Service;
+using FoodDelivery.Service.Implementations;
     using FoodDelivery.Service.Implements;
     using FoodDelivery.Service.Interfaces;
     using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -68,38 +69,6 @@
             }
         });
     });
-});
-
-
-//Cấu hình kết nối Database Postgresql
-var configuration = builder.Configuration;
-builder.Services.AddDbContext<FoodContext>(options =>
-    options.UseNpgsql(
-        configuration.GetConnectionString("Default"),
-        npgsqlOptions => npgsqlOptions.EnableRetryOnFailure()
-    )
-);
-
-//Định nghĩa chính sách CORS
-builder.Services.AddCors(options => {
-    options.AddPolicy("AllowReactApp",
-        policy => policy.WithOrigins("http://localhost:8080", "http://localhost:5173") // React dev ports
-                        .AllowAnyMethod()
-                        .AllowAnyHeader()
-                        .AllowCredentials());
-});
-builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IRoleRepository, RoleRepository>();
-builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
-builder.Services.AddScoped<IAddressRepository,AddressRepository>();
-builder.Services.AddScoped<ICartRepository, CartRepository>();
-builder.Services.AddScoped<ICartItemRepository, CartItemRepository>();
-builder.Services.AddScoped<IProductRepository, ProductRepository>();
-builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
-builder.Services.AddScoped<IOrderRepository, OrderRepository>();
-
 
     //Cấu hình kết nối Database Postgresql
     var configuration = builder.Configuration;
@@ -131,25 +100,26 @@ builder.Services.AddScoped<IOrderRepository, OrderRepository>();
     builder.Services.AddScoped<IOrderRepository,OrderRepository>();
     builder.Services.AddScoped<IRestaurantRepository,RestaurantRepository>();
     builder.Services.AddScoped<IReviewRepository,ReviewRepository>();
+    builder.Services.AddScoped<IShippers1Repository, Shipper1Repository>();
 
 
-builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IAccountService, AccountService>();
-builder.Services.AddScoped<IFileService,FileService>();
-builder.Services.AddScoped<IAddressService,AddressService>();
-builder.Services.AddScoped<IProductService, ProductService>();
-builder.Services.AddScoped<ICartService,CartService>();
-builder.Services.AddScoped<ICategoryService, CategoryService>();
-builder.Services.AddScoped<IReviewService,ReviewService>();
-builder.Services.AddScoped<IOrderService, OrderService>();
-builder.Services.AddScoped<IRestaurantService,RestaurantService>();
-builder.Services.AddScoped<IReviewService,ReviewService>();
-builder.Services.AddScoped<IShipperService, ShipperService>();
+    builder.Services.AddScoped<IAuthService, AuthService>();
+    builder.Services.AddScoped<IAccountService, AccountService>();
+    builder.Services.AddScoped<IFileService,FileService>();
+    builder.Services.AddScoped<IAddressService,AddressService>();
+    builder.Services.AddScoped<IProductService, ProductService>();
+    builder.Services.AddScoped<ICartService,CartService>();
+    builder.Services.AddScoped<ICategoryService, CategoryService>();
+    builder.Services.AddScoped<IReviewService,ReviewService>();
+    builder.Services.AddScoped<IOrderService, OrderService>();
+    builder.Services.AddScoped<IRestaurantService,RestaurantService>();
+    builder.Services.AddScoped<IReviewService,ReviewService>();
+    builder.Services.AddScoped<IShipperService, ShipperService>();
+    builder.Services.AddScoped<IShippers1Service, Shippers1Service>();
 
 builder.Services.AddAuthorization();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(option =>
 {
-
         option.TokenValidationParameters = new TokenValidationParameters
         {
             // 1. Xác minh Khóa Bí mật (Khóa quan trọng nhất!)
@@ -181,7 +151,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
     app.UseHttpsRedirection();
     app.UseStaticFiles();
     app.UseRouting();
-    //Kích hoạt CORS (Phải đặt trước UseAuthorization)
+    //Kích hoạt CORS
     app.UseCors("AllowReactApp");
     app.UseAuthentication(); //Kiểm tra bạn là ai 
     app.UseAuthorization();// Kiểm tra bạn có quyền truy cập gì

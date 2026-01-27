@@ -117,11 +117,11 @@ public class ReviewController : ControllerBase
         return Ok(result);
     }
     //PATCH	/api/admin/reviews/{id}/hide
-    [HttpPatch("/api/admin/reviews/{reviewId}/hide")]
+    [HttpPatch("/api/admin/reviews/{reviewId}/hidden")]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> HideReview(Guid reviewId)
+    public async Task<IActionResult> HiddenReview(Guid reviewId)
     {
-        var result = await _reviewService.HideReviewAsync(reviewId);
+        var result = await _reviewService.HiddenReviewAsync(reviewId);
         if (!result.IsSuccess)
         {
             return result.ErrorCode switch

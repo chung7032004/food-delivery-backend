@@ -153,7 +153,7 @@ namespace FoodDelivery.Service.Implements
             );
             return Result<PagedResponse<AdminReviewDto>>.Success(response);
         }
-        public async Task<Result> HideReviewAsync(Guid reviewId)
+        public async Task<Result> HiddenReviewAsync(Guid reviewId)
         {
             var review = await _reviewRepository.GetByIdAsync(reviewId);
             if(review == null)

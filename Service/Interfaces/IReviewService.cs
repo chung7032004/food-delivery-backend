@@ -11,7 +11,7 @@ namespace FoodDelivery.Service.Interfaces
         Task<Result> UpdateReviewAsync(Guid customerId, Guid reviewId, ReviewUpdateDto request) ;
         Task<Result> DeleteReviewAsync(Guid customerId, Guid reviewId);
         Task<Result<PagedResponse<AdminReviewDto>>> GetAllReviewsAsync(int ? rating, bool ? isHidden, int page, int pageSize);
-        Task<Result> HideReviewAsync(Guid reviewId);
+        Task<Result> HiddenReviewAsync(Guid reviewId);
         Task<ReviewReportDto> GetReviewReportAsync(Guid? productId);
         Task<Result> DeleteAsync(Guid reviewId);
     }
