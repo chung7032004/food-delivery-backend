@@ -3,7 +3,7 @@ using FoodDelivery.Service.Implements;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace FoodDelivery.Controller
+    namespace FoodDelivery.Controllers
 {
     [ApiController]
     [Route("api/products")]
@@ -17,11 +17,13 @@ namespace FoodDelivery.Controller
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAllProducts()
-            => Ok(await _productService.GetAllProductsAsync());
+        public async Task<IActionResult> GetAllProducts([FromQuery] Guid? categoryId, [FromQuery] string? q)
+            => Ok(await _productService.GetAllProductsAsync(categoryId, q));
+        
         [HttpGet("featured")]
         public async Task<IActionResult> GetFeaturedProducts()
             => Ok(await _productService.GetFeaturedProductsAsync());
+        
         [HttpGet("{productId}")]
         public async Task<IActionResult> GetProductById(Guid productId)
         {

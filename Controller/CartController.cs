@@ -5,8 +5,9 @@ using FoodDelivery.Service.Implementations;
 using FoodDelivery.Service.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 
-namespace FoodDelivery.Controller;
+namespace FoodDelivery.Controllers;
 
 [ApiController]
 [Route("api/[Controller]")]
@@ -21,13 +22,13 @@ public class CartController : ControllerBase
     
     [HttpGet]
     [Authorize(Roles = "Customer")]
-    public async Task<IActionResult> GetCart()
+    public async Task<IActionResult> GetCart([FromQuery] int page = 1, int pageSize = 10)
     {
         if(!User.TryGetUserId(out Guid userId))
         {
-             return Unauthorized(Result<CartResponse>.Failure("INVALID_TOKEN","Token không hợp lệ hoặc thiếu UserId."));
+             return Unauthorized(Result<PagedResponse<CartItemDto>>.Failure("INVALID_TOKEN","Token không hợp lệ hoặc thiếu UserId."));
         }
-        var result = await _cartService.GetCartAsync(userId);
+        var result = await _cartService.GetCartAsync(userId, page, pageSize);
         if (result.IsSuccess)
         {
             return Ok(result);
@@ -104,13 +105,13 @@ public class CartController : ControllerBase
 
     [HttpDelete("items")]
     [Authorize(Roles = "Customer")]
-    public async Task<IActionResult> DeleteCartItemRange(Guid productId,[FromBody] IEnumerable<Guid> productIds)
+    public async Task<IActionResult> DeleteCartItemRange([FromBody] DeleteCartItemsDto request)
     {
         if(!User.TryGetUserId(out Guid userId))
         {
             return Unauthorized(Result.Failure("INVALID_TOKEN","Token không hợp lệ hoặc thiếu UserId."));
         }
-        var result = await _cartService.DeleteCartItemRangeAsync(userId,productIds);
+        var result = await _cartService.DeleteCartItemRangeAsync(userId,request.ProductIds);
         if (result.IsSuccess)
         {
             return Ok(result);
@@ -137,5 +138,29 @@ public class CartController : ControllerBase
             return Ok(result);
         }
         return NotFound(result);
+    }
+
+    [HttpPost("save")]
+    [Authorize(Roles = "Customer")]
+    public async Task<IActionResult> SaveCart([FromBody] SaveCartRequest? request)
+    {
+        if(!User.TryGetUserId(out Guid userId))
+        {
+            return Unauthorized(Result.Failure("INVALID_TOKEN","Token không hợp lệ hoặc thiếu UserId."));
+        }
+        
+        // Handle null request
+        if (request == null)
+        {
+            request = new SaveCartRequest { Items = new() };
+        }
+        
+        var result = await _cartService.SaveCartAsync(userId, request);
+        if (result.IsSuccess)
+        {
+            return Ok(result);
+        }
+        
+        return BadRequest(result);
     }
 }

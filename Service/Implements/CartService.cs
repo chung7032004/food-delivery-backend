@@ -19,33 +19,40 @@ public class CartService : ICartService
         _context = context;
         _productRepository = productRepository;
     } 
-    public async Task<Result<CartResponse>> GetCartAsync (Guid customerId)
+    public async Task<Result<PagedResponse<CartItemDto>>> GetCartAsync (Guid customerId, int page, int pageSize)
     {
-        var cart = await _cartRepository.GetCartWithItemsByCustomerIdAsync(customerId);
+        pageSize = pageSize > 100 ? 100 : pageSize < 1 ? 10 : pageSize;
+        page = page < 1 ? 1 : page;
+        var cart = await _cartRepository.GetCartWithItemsByCustomerIdAsync(customerId, page, pageSize);
         if(cart == null)
         {
-            return Result<CartResponse>.Failure("CART_NOT_FOUND","Không tìm thấy giỏ hàng");
+            return Result<PagedResponse<CartItemDto>>.Failure("CART_NOT_FOUND","Không tìm thấy giỏ hàng");
         }
-        var response = new CartResponse
+        var items = cart.CartItems.Select(ci => new CartItemDto
         {
-            CustomerId = cart.CustomerId,
-            CreatedAt = cart.CreatedAt,
-            UpdatedAt =cart.UpdatedAt,
-            CartItems = cart.CartItems.Select(ci=> new CartItemDto
-            {
-                Id = ci.Id,
-                ProductId = ci.ProductId,
-                Quantity = ci.Quantity,
-                CategoryId = ci.Product.CategoryId,
-                CategoryName = ci.Product.Category.Name,
-                Name = ci.Product.Name,
-                Price = ci.Product.Price,
-                ImageUrl = ci.Product.ImageUrl,
-                AddedAt = ci.AddedAt, 
-                UpdatedAt = ci.UpdatedAt,
-            }).ToList()
-        };
-        return Result<CartResponse>.Success(response);
+            Id = ci.Id,
+            ProductId = ci.Product.Id,
+            ProductName = ci.Product.Name,
+
+            CategoryId = ci.Product.Category.Id,
+            CategoryName = ci.Product.Category.Name,
+
+            Quantity = ci.Quantity,
+            Price = ci.Product.Price,
+            ImageUrl = ci.Product.ImageUrl
+        }).ToList();
+        var totalItems = await _cartItemRepository.CountByCustomerIdAsync(customerId);
+        var responseMeta = new PaginationMeta(
+            Page:page,
+            PageSize : items.Count,
+            TotalCount : totalItems,
+            TotalPages : (int)Math.Ceiling((double)totalItems/pageSize)
+        );
+        var response = new PagedResponse<CartItemDto>(
+            Meta : responseMeta,
+            Data : items
+        );
+        return Result<PagedResponse<CartItemDto>>.Success(response);
     }
     public async Task<Result> AddCartItemAsync (Guid customerId, CartItemRequest cartItemRequest)
     {   
@@ -91,8 +98,9 @@ public class CartService : ICartService
                 ProductId = cartItemRequest.ProductId,
                 Quantity = cartItemRequest.Quantity,    
             };
+            await _cartItemRepository.AddAsync(cartItem);
         }
-        await _cartItemRepository.AddAsync(cartItem);
+        
         await _context.SaveChangesAsync();
         return Result.Success();
     }
@@ -200,6 +208,58 @@ public class CartService : ICartService
            return Result.Success(); 
         }
         await _cartItemRepository.DeleteRangeAsync(cartItems);
+        await _context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result> SaveCartAsync(Guid customerId, SaveCartRequest request)
+    {
+        if (request?.Items == null || !request.Items.Any())
+        {
+            // If empty cart, clear the cart
+            return await DeleteCartAsync(customerId);
+        }
+
+        // Get or create cart
+        var cart = await _cartRepository.GetByCustomerIdAsync(customerId);
+        if (cart == null)
+        {
+            cart = new Cart
+            {
+                CustomerId = customerId,
+                CreatedAt = DateTime.UtcNow
+            };
+            await _cartRepository.AddAsync(cart);
+            await _context.SaveChangesAsync();
+        }
+
+        // Clear existing cart items
+        var existingItems = await _cartItemRepository.GetByCartIdAsync(cart.Id);
+        if (existingItems.Any())
+        {
+            await _cartItemRepository.DeleteRangeAsync(existingItems);
+        }
+
+        // Add new items from request
+        foreach (var itemRequest in request.Items)
+        {
+            if (itemRequest.Quantity <= 0)
+                continue;
+
+            var product = await _productRepository.GetByIdAsync(itemRequest.ProductId);
+            if (product == null || !product.IsAvailable)
+                continue;
+
+            var cartItem = new CartItem
+            {
+                AddedAt = DateTime.UtcNow,
+                CartId = cart.Id,
+                ProductId = itemRequest.ProductId,
+                Quantity = itemRequest.Quantity,
+            };
+            await _cartItemRepository.AddAsync(cartItem);
+        }
+
         await _context.SaveChangesAsync();
         return Result.Success();
     }

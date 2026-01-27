@@ -26,6 +26,8 @@ public class AddressService : IAddressService
             Label = address.Label,
             Latitude = address.Latitude,    
             Longitude = address.Longitude,
+            PhoneNumber = address.PhoneNumber,
+            ReceiverName = address.ReceiverName,
         }).ToList();
         return Result<List<AddressResponse>>.Success(addressesResponse);
     }
@@ -44,6 +46,8 @@ public class AddressService : IAddressService
             Label = address.Label,
             Latitude = address.Latitude,
             Longitude = address.Longitude,
+            PhoneNumber = address.PhoneNumber,
+            ReceiverName = address.ReceiverName,
         };
         return Result<AddressResponse>.Success(response);
     }
@@ -62,7 +66,9 @@ public class AddressService : IAddressService
             Label = addressRequest.Label,
             Latitude = addressRequest.Latitude,
             Longitude = addressRequest.Longitude,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            PhoneNumber = addressRequest.PhoneNumber,
+            ReceiverName = addressRequest.ReceiverName,
         };
         var hasAny = await _addressRepository.HasAnyAsync(userId);
         if (!hasAny)
@@ -88,7 +94,9 @@ public class AddressService : IAddressService
             IsDefault = address.IsDefault,
             Latitude = address.Latitude,
             Longitude = address.Longitude,
-            CreateAt = address.CreatedAt
+            CreateAt = address.CreatedAt,
+            PhoneNumber = address.PhoneNumber,
+            ReceiverName = address.ReceiverName,
         };
 
         return Result<AddAddressResponse>.Success(response);
@@ -105,6 +113,8 @@ public class AddressService : IAddressService
         address.Latitude = addressRequest.Latitude;
         address.Longitude = addressRequest.Longitude;
         address.UpdatedAt = DateTime.UtcNow;
+        address.PhoneNumber = addressRequest.PhoneNumber;
+        address.ReceiverName = address.ReceiverName;
         if (addressRequest.IsDefault)
         {
             var addressDefault = await _addressRepository.GetDefaultByUserIdAsync(userId);

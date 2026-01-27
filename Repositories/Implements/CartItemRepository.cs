@@ -25,23 +25,40 @@ public class CartItemRepository : ICartItemRepository
             .Where(ci=>ci.CartId==cartId)
             .ToListAsync();
     }
+    public async Task<List<CartItem>> GetByIdsAsync(Guid customerId,List<Guid> ids)
+    {
+        return await _context.CartItems
+            .Include(ci=>ci.Product)
+            .Include(ci=>ci.Cart)
+            .Where(ci=>
+                ids.Contains(ci.Id)&&
+                ci.Cart.CustomerId == customerId
+            )
+            .ToListAsync();
+    }
     public async Task AddAsync(CartItem item)
     {
         await _context.CartItems.AddAsync(item);
     }
-    public Task UpdateAsync(CartItem item)
+    public async Task UpdateAsync(CartItem item)
     {
         _context.CartItems.Update(item);
-        return Task.CompletedTask;
+        await Task.CompletedTask;
     }
-    public Task DeleteAsync(CartItem item)
+    public async  Task DeleteAsync(CartItem item)
     {
         _context.CartItems.Remove(item);
-        return Task.CompletedTask;
+        await Task.CompletedTask;
     }
-    public Task DeleteRangeAsync(IEnumerable<CartItem> items)
+    public async Task DeleteRangeAsync(IEnumerable<CartItem> items)
     {
         _context.CartItems.RemoveRange(items);
-        return Task.CompletedTask;
+        await Task.CompletedTask;
+    }
+    public async Task<int> CountByCustomerIdAsync(Guid customerId)
+    {
+        return await _context.CartItems
+            .Where(ci => ci.Cart.CustomerId == customerId)
+            .CountAsync();
     }
 }

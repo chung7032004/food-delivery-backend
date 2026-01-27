@@ -5,7 +5,7 @@ using FoodDelivery.Service.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace FoodDelivery.Controller;
+namespace FoodDelivery.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -63,7 +63,7 @@ public class AddressController : ControllerBase
         {
             return NotFound(result);
         }
-        return NoContent();
+        return Ok(result);
     }
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)
@@ -73,7 +73,7 @@ public class AddressController : ControllerBase
         {
             return NotFound(result);
         }
-        return NoContent();
+        return Ok(result);
     }
     [HttpPatch("{id}/default")]
     public async Task<IActionResult> SetDefault(Guid id)
@@ -87,7 +87,7 @@ public class AddressController : ControllerBase
         {
             return BadRequest(result);
         }
-        return NoContent();
+        return Ok(result);
     }
     
 }
