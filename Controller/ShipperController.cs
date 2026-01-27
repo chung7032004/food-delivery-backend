@@ -56,5 +56,52 @@ namespace FoodDelivery.Controllers
             if (!ok) return NotFound(new { message = "Order detail not found." });
             return Ok(new { message = "Đã cập nhật: Giao hàng thất bại" });
         }
+        [HttpGet("all-shippers")]
+        [Authorize(Roles = "Admin")] // Chỉ Admin mới được xem danh sách
+        public async Task<IActionResult> GetAllShippers()
+        {
+            var result = await _service.GetAllShippersAsync();
+            return Ok(result);
+        }
+
+        // 3. Xem chi tiết shipper
+        [HttpGet("detail/{userId}")]
+        public async Task<IActionResult> GetDetail(Guid userId)
+        {
+            var result = await _service.GetShipperByIdAsync(userId);
+            if (result == null) return NotFound(new { message = "Không tìm thấy shipper" });
+            return Ok(result);
+        }
+
+        // 4. Kích hoạt / khóa shipper
+        [HttpPut("toggle-status/{userId}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> ToggleStatus(Guid userId, [FromQuery] bool isActive)
+        {
+            var ok = await _service.ToggleShipperStatusAsync(userId, isActive);
+            if (!ok) return BadRequest(new { message = "Cập nhật trạng thái thất bại" });
+            return Ok(new { message = isActive ? "Đã kích hoạt shipper" : "Đã khóa shipper" });
+        }
+
+        // 5. Xem lịch sử giao hàng của 1 shipper
+        [HttpGet("history/{userId}")]
+        public async Task<IActionResult> GetHistory(Guid userId)
+        {
+            var result = await _service.GetShipperHistoryAsync(userId);
+            return Ok(result);
+        }
+
+        // 1. Tạo shipper từ user (Phân quyền)
+        [HttpPost("assign-role/{userId}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> AssignRole(Guid userId)
+        {
+            var ok = await _service.AssignShipperRoleAsync(userId);
+            if (!ok) return BadRequest(new { message = "Không thể phân quyền cho user này" });
+            return Ok(new { message = "Đã chuyển user thành shipper thành công" });
+        }
+        
     }
+    
+    
 }
