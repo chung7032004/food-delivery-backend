@@ -13,24 +13,35 @@ namespace FoodDelivery.Service.Implements
         public async Task<bool> ConfirmPickUpAsync(Guid orderId, Guid userId)
         {
             var orderDetail = await _shipperRepository.GetOrderDetailByIdAsync(orderId);
-            if (orderDetail == null) return false;
+            if (orderDetail == null || orderDetail.Status != OrderStatus.Pending) return false;
+
             orderDetail.Status = OrderStatus.Shipping;
             orderDetail.ShipperId = userId;
+            
             _shipperRepository.UpdateOrderDetail(orderDetail);
-            await _shipperRepository.AddStatusHistoryAsync(new OrderStatusHistory { OrderId = orderId, Status = OrderStatus.Shipping, ChangeByUserId = userId, ChangedAt = DateTime.Now });
+            await _shipperRepository.AddStatusHistoryAsync(new OrderStatusHistory { 
+                OrderId = orderId, Status = OrderStatus.Shipping, ChangeByUserId = userId, ChangedAt = DateTime.Now 
+            });
             return await _shipperRepository.SaveChangesAsync();
         }
 
+        
+
         public async Task<bool> MarkSuccessAsync(Guid orderId)
-        {
+{
             var orderDetail = await _shipperRepository.GetOrderDetailByIdAsync(orderId);
-            if (orderDetail == null) return false;
+            // Kiểm tra trạng thái trước khi đổi
+            if (orderDetail == null || orderDetail.Status != OrderStatus.Shipping) return false;
+
             orderDetail.Status = OrderStatus.Completed;
             orderDetail.ActualDeliveryTime = DateTime.Now;
+
             _shipperRepository.UpdateOrderDetail(orderDetail);
-            await _shipperRepository.AddStatusHistoryAsync(new OrderStatusHistory { OrderId = orderId, Status = OrderStatus.Completed, ChangedAt = DateTime.Now });
+            await _shipperRepository.AddStatusHistoryAsync(new OrderStatusHistory { 
+                OrderId = orderId, Status = OrderStatus.Completed, ChangedAt = DateTime.Now 
+            });
             return await _shipperRepository.SaveChangesAsync();
-        }
+}
 
         public async Task<bool> MarkFailedAsync(Guid orderId, string reason, Guid? cancelledBy = null)
         {
@@ -45,14 +56,17 @@ namespace FoodDelivery.Service.Implements
         }
 
         public async Task<List<User>> GetAllShippersAsync() => await _shipperRepository.GetAllShippersAsync();
-        public async Task<User?> GetShipperByIdAsync(Guid userId) => await _shipperRepository.GetShipperByIdAsync(userId);
+        public async Task<Shipper?> GetShipperByIdAsync(Guid userId) => await _shipperRepository.GetShipperByIdAsync(userId);
         public async Task<List<OrderStatusHistory>> GetShipperHistoryAsync(Guid userId) => await _shipperRepository.GetShipperHistoryAsync(userId);
 
         public async Task<bool> ToggleShipperStatusAsync(Guid userId, bool isActive)
         {
-            var user = await _shipperRepository.GetShipperByIdAsync(userId);
-            if (user == null) return false;
-            user.IsActive = isActive;
+            var shipper = await _shipperRepository.GetShipperByIdAsync(userId);
+            if (shipper == null || shipper.User == null) return false;
+
+            // Sửa chỗ này: Truy cập vào thuộc tính User để đổi IsActive
+            shipper.User.IsActive = isActive; 
+
             return await _shipperRepository.SaveChangesAsync();
         }
 
@@ -63,5 +77,7 @@ namespace FoodDelivery.Service.Implements
             await _shipperRepository.AddUserRoleAsync(new UserRole { UserId = userId, RoleId = role.Id });
             return await _shipperRepository.SaveChangesAsync();
         }
+
+
     }
 }
