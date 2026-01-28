@@ -59,4 +59,31 @@ public class AccountService : IAccountService
         await _unitOfWork.SaveChangesAsync();
         return Result.Success();
     }
+
+    public async Task<Result<AccountResponse>> UpdateProfileAsync(Guid userId, UpdateProfileRequest request)
+    {
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user == null)
+        {
+            return Result<AccountResponse>.Failure("USER_NOT_FOUND", "User không tồn tại");
+        }
+
+        user.FullName = request.FullName.Trim();
+        user.Phone = request.Phone.Trim();
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await _userRepository.UpdateAsync(user);
+        await _unitOfWork.SaveChangesAsync();
+
+        return Result<AccountResponse>.Success(new AccountResponse
+        {
+            Id = user.Id,
+            Email = user.Email,
+            FullName = user.FullName,
+            Phone = user.Phone,
+            AvatarUrl = string.IsNullOrWhiteSpace(user.AvatarUrl)
+                ? "/uploads/avatars/default.png"
+                : user.AvatarUrl,
+        });
+    }
 }

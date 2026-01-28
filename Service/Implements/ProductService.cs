@@ -60,6 +60,12 @@ namespace FoodDelivery.Service.Implements
 
         public async Task<ProductResponeDto> CreateProductAsync(ProductCreateDto dto)
         {
+            // Get all products to calculate next display order
+            var allProducts = await _productRepo.GetAllAsync();
+            
+            // If displayOrder is not provided or is 0, calculate it automatically
+            int displayOrder = dto.DisplayOrder > 0 ? dto.DisplayOrder : allProducts.Count();
+            
             var product = new Product
             {
                 CategoryId = dto.CategoryId,
@@ -68,7 +74,7 @@ namespace FoodDelivery.Service.Implements
                 ImageUrl = dto.ImageUrl ?? string.Empty,
                 IsAvailable = dto.IsAvailable,
                 IsFeatured = dto.IsFeatured,
-                DisplayOrder = dto.DisplayOrder,
+                DisplayOrder = displayOrder,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -96,6 +102,19 @@ namespace FoodDelivery.Service.Implements
             return true;
         }
 
+        public async Task<bool> UpdateDisplayOrderAsync(Guid productId, int newDisplayOrder)
+        {
+            var product = await _productRepo.GetByIdAsync(productId);
+            if (product == null) return false;
+
+            product.DisplayOrder = newDisplayOrder;
+            product.UpdatedAt = DateTime.UtcNow;
+
+            await _productRepo.UpdateAsync(product);
+            await _unitOfWork.SaveChangesAsync();
+            return true;
+        }
+
         public async Task<bool> ToggleProductAvailabilityAsync(Guid productId)
         {
             var product = await _productRepo.GetByIdAsync(productId);
@@ -114,7 +133,20 @@ namespace FoodDelivery.Service.Implements
             var product = await _productRepo.GetByIdAsync(productId);
             if (product == null) return false;
 
+            // Delete the product
             await _productRepo.DeleteAsync(product);
+            
+            // Get remaining products sorted by display order
+            var remainingProducts = await _productRepo.GetAllAsync();
+            var sortedProducts = remainingProducts.Where(p => p.Id != productId).OrderBy(p => p.DisplayOrder).ToList();
+            
+            // Reassign display order sequentially
+            for (int i = 0; i < sortedProducts.Count; i++)
+            {
+                sortedProducts[i].DisplayOrder = i;
+                await _productRepo.UpdateAsync(sortedProducts[i]);
+            }
+            
             await _unitOfWork.SaveChangesAsync();
             return true;
         }

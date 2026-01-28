@@ -8,6 +8,7 @@ namespace FoodDelivery.Service.Implements
         Task<ProductResponeDto?> GetProductByIdAsync(Guid productId);
         Task<ProductResponeDto> CreateProductAsync(ProductCreateDto productCreateDto);
         Task<bool> UpdateProductAsync(Guid productId, ProductUpdateDto productUpdateDto);
+        Task<bool> UpdateDisplayOrderAsync(Guid productId, int newDisplayOrder);
         Task<bool> ToggleProductAvailabilityAsync(Guid productId);
         Task<bool> DeleteProductAsync(Guid productId);
     }
