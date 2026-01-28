@@ -64,7 +64,8 @@ namespace FoodDelivery.Service.Implements
             var allProducts = await _productRepo.GetAllAsync();
             
             // If displayOrder is not provided or is 0, calculate it automatically
-            int displayOrder = dto.DisplayOrder > 0 ? dto.DisplayOrder : allProducts.Count();
+            // Use count * 10 to allow room for insertions between products
+            int displayOrder = dto.DisplayOrder > 0 ? dto.DisplayOrder : (allProducts.Count() * 10);
             
             var product = new Product
             {
@@ -133,20 +134,7 @@ namespace FoodDelivery.Service.Implements
             var product = await _productRepo.GetByIdAsync(productId);
             if (product == null) return false;
 
-            // Delete the product
             await _productRepo.DeleteAsync(product);
-            
-            // Get remaining products sorted by display order
-            var remainingProducts = await _productRepo.GetAllAsync();
-            var sortedProducts = remainingProducts.Where(p => p.Id != productId).OrderBy(p => p.DisplayOrder).ToList();
-            
-            // Reassign display order sequentially
-            for (int i = 0; i < sortedProducts.Count; i++)
-            {
-                sortedProducts[i].DisplayOrder = i;
-                await _productRepo.UpdateAsync(sortedProducts[i]);
-            }
-            
             await _unitOfWork.SaveChangesAsync();
             return true;
         }
