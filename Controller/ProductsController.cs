@@ -42,6 +42,11 @@ using Microsoft.AspNetCore.Mvc;
             => await _productService.UpdateProductAsync(id, dto) ? Ok() : NotFound();
 
         [Authorize(Roles = "Admin")]
+        [HttpPatch("{id}/display-order")]
+        public async Task<IActionResult> UpdateDisplayOrder(Guid id, [FromBody] UpdateDisplayOrderDto dto)
+            => await _productService.UpdateDisplayOrderAsync(id, dto.NewDisplayOrder) ? Ok() : NotFound();
+
+        [Authorize(Roles = "Admin")]
         [HttpPatch("{id}/toggle")]
         public async Task<IActionResult> ToggleAvailability(Guid id)
             => await _productService.ToggleProductAvailabilityAsync(id) ? Ok() : NotFound();

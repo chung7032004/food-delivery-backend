@@ -254,51 +254,59 @@ public class OrderService :IOrderService
     }
     public async Task<Result<OrderDetailResponse>> GetOrderDetailAsync(Guid userId, List<string> roles, Guid orderId)
     {   
-        
-        var order = await _orderRepository.GetOrderDetailAsync(orderId);
-        if(order == null)
+        try
         {
-            return Result<OrderDetailResponse>.Failure("ORDER__NOT_FOUND","Không tìm thấy đơn hàng này");
-        }
-        bool isAdmin = roles.Contains("Admin");
-        bool isOwner = order.CustomerId == userId;
-        if (!isAdmin && !isOwner)
-        {
-            return Result<OrderDetailResponse>.Failure("ORDER__FORBIDDEN", "Bạn không có quyền xem đơn hàng này");
-        }
-        var response = new OrderDetailResponse
-        {
-            CustomerId = order.CustomerId,
-            CustomerEmail = order.Customer.Email,
-            CustomerName = order.Customer.FullName,
-            OrderId = order.Id,
-            OrderCode = order.OrderCode,
-            CreatedAt = order.CreatedAt,
-            ShippingAddress  = order.ShippingAddress,
-            ReceiverName  = order.ReceiverName,
-            ReceiverPhone  = order.ReceiverPhone,
-            ShippingFee = order.ShippingFee, 
-            EstimatedDeliveryTime  = order.OrderDetail.EstimatedDeliveryTime,
-            ActualDeliveryTime = order.OrderDetail.ActualDeliveryTime,
-            PaymentMethod = order.OrderDetail.PaymentMethod,
-            PaymentStatus = order.OrderDetail.PaymentStatus,
-            CurrentStatus =order.OrderDetail.Status,
-            CancelReason = order.OrderDetail.CancelReason,
-            TotalAmount = order.TotalAmount,
-        };
+            var order = await _orderRepository.GetOrderDetailAsync(orderId);
+            if(order == null)
+            {
+                return Result<OrderDetailResponse>.Failure("ORDER__NOT_FOUND","Không tìm thấy đơn hàng này");
+            }
+            bool isAdmin = roles.Contains("Admin");
+            bool isOwner = order.CustomerId == userId;
+            if (!isAdmin && !isOwner)
+            {
+                return Result<OrderDetailResponse>.Failure("ORDER__FORBIDDEN", "Bạn không có quyền xem đơn hàng này");
+            }
+            
+            // Check if OrderDetail exists
+            if (order.OrderDetail == null)
+            {
+                return Result<OrderDetailResponse>.Failure("ORDER_DETAIL_NOT_FOUND", "Thông tin chi tiết đơn hàng không tồn tại");
+            }
+            
+            var response = new OrderDetailResponse
+            {
+                CustomerId = order.CustomerId,
+                CustomerEmail = order.Customer?.Email ?? "",
+                CustomerName = order.Customer?.FullName ?? "",
+                OrderId = order.Id,
+                OrderCode = order.OrderCode,
+                CreatedAt = order.CreatedAt,
+                ShippingAddress  = order.ShippingAddress,
+                ReceiverName  = order.ReceiverName,
+                ReceiverPhone  = order.ReceiverPhone,
+                ShippingFee = order.ShippingFee, 
+                EstimatedDeliveryTime  = order.OrderDetail.EstimatedDeliveryTime,
+                ActualDeliveryTime = order.OrderDetail.ActualDeliveryTime,
+                PaymentMethod = order.OrderDetail.PaymentMethod,
+                PaymentStatus = order.OrderDetail.PaymentStatus,
+                CurrentStatus =order.OrderDetail.Status,
+                CancelReason = order.OrderDetail.CancelReason,
+                TotalAmount = order.TotalAmount,
+            };
         foreach(var item in order.OrderItems)
         {
             response.Items.Add(new OrderItemResponse
             {
-            ProductId = item.ProductId,
-            ProductName = item.ProductName,
-            ProductImage  = item.ProductImage,
-            Quantity = item.Quantity,
-            UnitPrice = item.UnitPrice,
-            TotalPrice = item.UnitPrice * item.Quantity,
-            IsRemoved = item.IsRemoved,
-            RemoveReason = item.RemoveReason,
-        });
+                ProductId = item.ProductId,
+                ProductName = item.ProductName ?? string.Empty,
+                ProductImage  = item.ProductImage ?? string.Empty,
+                Quantity = item.Quantity,
+                UnitPrice = item.UnitPrice,
+                TotalPrice = item.UnitPrice * item.Quantity,
+                IsRemoved = item.IsRemoved,
+                RemoveReason = item.RemoveReason ?? string.Empty,
+            });
         }
         foreach(var history in order.OrderStatusHistories)
         {
@@ -309,10 +317,21 @@ public class OrderService :IOrderService
                 ChangedBy  = history.ChangeByUser != null
                     ? history.ChangeByUser.FullName
                     : "System",
-                Note  = history.Note,
+                Note  = history.Note ?? string.Empty,
             });
         }
         return Result<OrderDetailResponse>.Success(response);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ERROR] GetOrderDetailAsync failed: {ex.Message}");
+            Console.WriteLine($"[ERROR] StackTrace: {ex.StackTrace}");
+            if (ex.InnerException != null)
+            {
+                Console.WriteLine($"[ERROR] InnerException: {ex.InnerException.Message}");
+            }
+            return Result<OrderDetailResponse>.Failure("ORDER_ERROR", $"Lỗi: {ex.Message}");
+        }
     }   
     public async Task<Result> CancelOrderByCustomerAsync(Guid userId,Guid orderId, CancelOrderRequestDto request)
     {

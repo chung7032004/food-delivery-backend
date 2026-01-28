@@ -111,13 +111,17 @@ public class OrdersController : ControllerBase
     [Authorize(Roles = "Admin,Customer")]
     public async Task<IActionResult> GetOrderDetail(Guid orderId)
     {
+        Console.WriteLine($"[GetOrderDetail] Called with orderId: {orderId}");
         if(!User.TryGetUserId(out Guid customerId))
         {
+            Console.WriteLine($"[GetOrderDetail] Failed to get userId from claims");
             return Unauthorized(Result<OrderDetailResponse>.Failure("INVALID_TOKEN","Phiên dùng không hợp lệ."));
         }
         var roles = User.FindAll(ClaimTypes.Role).Select(r => r.Value).ToList();
+        Console.WriteLine($"[GetOrderDetail] UserId: {customerId}, Roles: {string.Join(",", roles)}");
         
         var result = await _orderService.GetOrderDetailAsync(customerId,roles,orderId);
+        Console.WriteLine($"[GetOrderDetail] Service result - Success: {result.IsSuccess}, Error: {result.ErrorCode}");
         if (!result.IsSuccess)
             return result.ErrorCode switch
             {

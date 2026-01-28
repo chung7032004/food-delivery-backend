@@ -17,6 +17,7 @@ public class OrderRepository : IOrderRepository
         return await _context.Orders
             .AsNoTracking()
             .Where(o=> o.CustomerId == customerId)
+            .Include(o => o.OrderDetail)
             .OrderByDescending(o=>o.CreatedAt)
             .Skip((page-1)*pageSize)
             .Take(pageSize)
