@@ -5,6 +5,7 @@ namespace FoodDelivery.Repositories.Interfaces;
 public interface IOrderRepository
 {
     Task<List<OrderHistoryItemResponse>> GetMyOrderAsync(Guid customerId, int page, int pageSize);
+    Task<(List<OrderHistoryItemResponse> data , int totalCount )> GetOrderByShipperIdAsync(Guid shipperId, int page, int pageSize);
     Task<Order?> GetOrderDetailAsync(Guid orderId);
     Task<Order?> GetOrderById(Guid orderId);
     Task AddAsync(Order order);

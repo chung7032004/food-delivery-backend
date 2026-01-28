@@ -54,6 +54,29 @@ public class OrderRepository : IOrderRepository
             .Include(o => o.OrderStatusHistories)
             .FirstOrDefaultAsync(o=>o.Id == orderId);
     }
+    public async Task<(List<OrderHistoryItemResponse> data , int totalCount )> GetOrderByShipperIdAsync(Guid shipperId, int page, int pageSize)
+    {
+        var query =  _context.Orders
+            .AsNoTracking()
+            .Where(o=> o.OrderDetail.ShipperId == shipperId);
+        var totalCount = await query.CountAsync();
+        var items = await query
+            .OrderByDescending(o=>o.CreatedAt)
+            .Skip((page-1)*pageSize)
+            .Take(pageSize)
+            .Select(o=> new OrderHistoryItemResponse
+            {
+                OrderId = o.Id,
+                OrderCode = o.OrderCode,
+                CreatedAt = o.CreatedAt,
+                TotalAmount = o.TotalAmount,
+                ShippingFee = o.ShippingFee,
+                CurrentStatus = o.OrderDetail.Status,
+                EstimatedDeliveryTime = o.OrderDetail.EstimatedDeliveryTime
+            })
+            .ToListAsync();
+        return (items,totalCount);
+    }
     public async Task AddAsync(Order order)
     {
         await _context.Orders.AddAsync(order);

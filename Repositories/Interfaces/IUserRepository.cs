@@ -7,6 +7,7 @@ namespace FoodDelivery.Repositories.Interfaces
         Task<User?> GetByEmailAsync(string email);
         Task<User?> GetByIdAsync(Guid id);
         Task<User?> GetUserByIdWithRoleAsync(Guid userId);
+        Task<(List<User> users, int totalCount  )> GetAllUserAsync(int page = 1, int pageSize = 10, string? role = null);
         Task<bool> IsEmailExistsAsync(string email);
         Task AddAsync(User user);
         Task UpdateAsync(User user);

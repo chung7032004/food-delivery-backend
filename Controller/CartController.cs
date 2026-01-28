@@ -22,7 +22,7 @@ public class CartController : ControllerBase
     
     [HttpGet]
     [Authorize(Roles = "Customer")]
-    public async Task<IActionResult> GetCart([FromQuery] int page = 1, int pageSize = 10)
+    public async Task<IActionResult> GetCart([FromQuery] int page = 1,[FromQuery] int pageSize = 10)
     {
         if(!User.TryGetUserId(out Guid userId))
         {

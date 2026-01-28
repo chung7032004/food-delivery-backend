@@ -14,7 +14,8 @@ public class Shipper1Repository : IShippers1Repository{
     {
         var query =  _context.Shippers
             .AsNoTracking()
-            .Include(s=>s.User);
+            .Include(s=>s.User)
+            .AsQueryable();
         var toTalCount = await query.CountAsync(); 
         var data = await query        
             .OrderByDescending(s=>s.CreatedAt)
@@ -22,6 +23,10 @@ public class Shipper1Repository : IShippers1Repository{
             .Take(pageSize)
             .ToListAsync();
         return(data, toTalCount);
+    }
+    public async Task<Shipper?> GetByUserIdAsync(Guid userId)
+    {
+        return await _context.Shippers.FirstOrDefaultAsync(s=>s.UserId == userId);
     }
     public async Task<Shipper?> GetByIdAsync(Guid id)
     {
@@ -46,5 +51,6 @@ public class Shipper1Repository : IShippers1Repository{
     public async Task DeleteAsync (Shipper shipper)
     {
         _context.Shippers.Remove(shipper);
+        await Task.CompletedTask;
     }
 }

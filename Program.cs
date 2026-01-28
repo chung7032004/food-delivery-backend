@@ -6,7 +6,8 @@ using FoodDelivery.Service;
 using FoodDelivery.Service.Implementations;
     using FoodDelivery.Service.Implements;
     using FoodDelivery.Service.Interfaces;
-    using Microsoft.AspNetCore.Authentication.JwtBearer;
+using FoodDelivery.Service.Interfaces.Admin;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.IdentityModel.Tokens;
     using System.Text;
@@ -116,6 +117,7 @@ using FoodDelivery.Service.Implementations;
     builder.Services.AddScoped<IReviewService,ReviewService>();
     builder.Services.AddScoped<IShipperService, ShipperService>();
     builder.Services.AddScoped<IShippers1Service, Shippers1Service>();
+    builder.Services.AddScoped<IUserManagerService,UserManagerService>();
 
 builder.Services.AddAuthorization();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(option =>

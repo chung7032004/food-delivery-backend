@@ -27,6 +27,21 @@ namespace FoodDelivery.Repositories.Implementations
         {
             return await _context.Users.FindAsync(id);
         }
+        public async Task<(List<User> users, int totalCount  )> GetAllUserAsync(int page = 1, int pageSize = 10, string? role = null)
+        {
+            var query = _context.Users.AsNoTracking().Include(u=>u.UserRoles).ThenInclude(ur=>ur.Role).AsQueryable();
+            if(!string.IsNullOrEmpty(role))
+            {
+                query = query.Where(u => u.UserRoles.Any(ur => ur.Role.Name == role));
+            }
+            var totalCount =await query.CountAsync();
+            var users = await query
+                .OrderByDescending(u=>u.CreatedAt)
+                .Skip((page-1)*pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+            return(users,totalCount);
+        }
         public async Task<User?> GetUserByIdWithRoleAsync(Guid userId)
         {
             return await _context.Users
