@@ -21,9 +21,13 @@ namespace FoodDelivery.Repositories.Implements
         public async Task<List<User>> GetAllShippersAsync() => 
             await _context.Users.Where(u => u.UserRoles.Any(r => r.Role.Name == "Shipper")).ToListAsync();
 
-        public async Task<User?> GetShipperByIdAsync(Guid userId) => 
-            await _context.Users.Include(u => u.UserRoles).ThenInclude(ur => ur.Role).FirstOrDefaultAsync(u => u.Id == userId);
-
+        public async Task<Shipper?> GetShipperByIdAsync(Guid userId)
+        {
+            return await _context.Shippers
+            .Include(s => s.User) 
+            .FirstOrDefaultAsync(s => s.UserId == userId);
+        }
+            
         public async Task<List<OrderStatusHistory>> GetShipperHistoryAsync(Guid userId) => 
             await _context.OrderStatusHistories.Where(h => h.ChangeByUserId == userId).OrderByDescending(h => h.ChangedAt).ToListAsync();
 

@@ -9,10 +9,10 @@ namespace FoodDelivery.Repositories.Interfaces
         Task AddStatusHistoryAsync(OrderStatusHistory history);
         Task<bool> SaveChangesAsync();
         Task<List<User>> GetAllShippersAsync();
-        Task<User?> GetShipperByIdAsync(Guid userId);
+        Task<Shipper?> GetShipperByIdAsync(Guid userId);
         Task<List<OrderStatusHistory>> GetShipperHistoryAsync(Guid userId);
         
-        // 2 hàm quan trọng để hết lỗi đỏ CS1061
+        
         Task<Role?> GetRoleByNameAsync(string roleName);
         Task AddUserRoleAsync(UserRole userRole);
     }

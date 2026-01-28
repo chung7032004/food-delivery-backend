@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 public class FoodContext : DbContext
 {
+    public DbSet<Shipper> Shippers { get; set; }
     public FoodContext(DbContextOptions<FoodContext> options ) : base(options) {}
     public DbSet<RestaurantProfile> RestaurantProfiles{get; set;} 
     public DbSet<Address> Addresses{get;set;}

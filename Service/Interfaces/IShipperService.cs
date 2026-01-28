@@ -12,7 +12,7 @@ namespace FoodDelivery.Service.Interfaces
 
         // --- 5 chức năng quản lý 
         Task<List<User>> GetAllShippersAsync(); // Chức năng 2
-        Task<User?> GetShipperByIdAsync(Guid userId); // Chức năng 3
+        Task<Shipper?> GetShipperByIdAsync(Guid userId); // Chức năng 3
         Task<bool> ToggleShipperStatusAsync(Guid userId, bool isActive); // Chức năng 4
         Task<List<OrderStatusHistory>> GetShipperHistoryAsync(Guid userId); // Chức năng 5
         Task<bool> AssignShipperRoleAsync(Guid userId); // Chức năng 1
