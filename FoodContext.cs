@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 public class FoodContext : DbContext
 {
     public DbSet<Shipper> Shippers { get; set; }
+    public DbSet<Notification> Notifications { get; set; }
     public FoodContext(DbContextOptions<FoodContext> options ) : base(options) {}
     public DbSet<RestaurantProfile> RestaurantProfiles{get; set;} 
     public DbSet<Address> Addresses{get;set;}
@@ -169,6 +170,31 @@ public class FoodContext : DbContext
                 .IsRequired(false);
             entity.Property(od => od.ActualDeliveryTime)
                 .IsRequired(false);
+        });
+
+        modelBuilder.Entity<Notification>(entity =>
+        {
+            entity.HasOne(n => n.User)
+                .WithMany(u => u.Notifications)
+                .HasForeignKey(n => n.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.Property(n => n.Type)
+                .HasConversion<int>();
+
+            entity.Property(n => n.Title)
+                .HasMaxLength(200)
+                .IsRequired();
+
+            entity.Property(n => n.Message)
+                .HasMaxLength(1000)
+                .IsRequired();
+
+            entity.Property(n => n.Link)
+                .HasMaxLength(500);
+
+            entity.HasIndex(n => new { n.UserId, n.CreatedAt })
+                .IsDescending();
         });
     }
 }

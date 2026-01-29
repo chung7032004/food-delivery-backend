@@ -8,6 +8,7 @@ namespace FoodDelivery.Repositories.Interfaces
         Task<User?> GetByIdAsync(Guid id);
         Task<User?> GetUserByIdWithRoleAsync(Guid userId);
         Task<bool> IsEmailExistsAsync(string email);
+        Task<List<User>> GetUsersByRoleAsync(string roleName);
         Task AddAsync(User user);
         Task UpdateAsync(User user);
         Task DeleteSoftAsync(Guid userId);

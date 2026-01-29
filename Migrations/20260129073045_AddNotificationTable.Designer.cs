@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -10,9 +11,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FoodDelivery.Migrations
 {
     [DbContext(typeof(FoodContext))]
-    partial class FoodContextModelSnapshot : ModelSnapshot
+    [Migration("20260129073045_AddNotificationTable")]
+    partial class AddNotificationTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -484,14 +487,14 @@ namespace FoodDelivery.Migrations
                             Id = new Guid("11111111-1111-1111-1111-111111111111"),
                             Address = "319 Hùng Vương, P. Vĩnh Trung, Q. Thanh Khê, Đà Nẵng",
                             CloseTime = new TimeSpan(0, 22, 0, 0, 0),
-                            CreatedAt = new DateTime(2026, 1, 29, 7, 41, 9, 145, DateTimeKind.Utc).AddTicks(7338),
+                            CreatedAt = new DateTime(2026, 1, 29, 7, 30, 43, 216, DateTimeKind.Utc).AddTicks(9972),
                             IsOpen = true,
                             Latitude = 16.067771,
                             Longitude = 108.214287,
                             Name = "Food Delivery Shop",
                             OpenTime = new TimeSpan(0, 8, 0, 0, 0),
                             Phone = "0909123456",
-                            UpdatedAt = new DateTime(2026, 1, 29, 7, 41, 9, 145, DateTimeKind.Utc).AddTicks(7339)
+                            UpdatedAt = new DateTime(2026, 1, 29, 7, 30, 43, 216, DateTimeKind.Utc).AddTicks(9972)
                         });
                 });
 

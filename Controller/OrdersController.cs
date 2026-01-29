@@ -257,6 +257,50 @@ public class OrdersController : ControllerBase
         }
         return Ok(result);
     }
+
+    /// <summary>
+    /// Mark order as delivered (Shipper)
+    /// </summary>
+    [HttpPut("shipper/orders/{orderId}/delivered")]
+    [Authorize(Roles = "Shipper")]
+    public async Task<IActionResult> MarkAsDelivered(Guid orderId)
+    {
+        if(!User.TryGetUserId(out Guid shipperId))
+        {
+            return Unauthorized(Result.Failure("INVALID_TOKEN","Phiên dùng không hợp lệ."));
+        }
+        var result = await _orderService.MarkAsDeliveredAsync(shipperId, orderId);
+        if (!result.IsSuccess)
+        {
+            return result.ErrorCode switch
+            {
+                "ORDER_NOT_FOUND" => NotFound(result),
+                "INVALID_STATUS" => BadRequest(result),
+                _ => BadRequest(result)
+            };
+        }
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Mark payment as complete (called after payment success)
+    /// </summary>
+    [HttpPut("orders/{orderId}/payment-complete")]
+    [Authorize]
+    public async Task<IActionResult> MarkPaymentComplete(Guid orderId)
+    {
+        var result = await _orderService.MarkPaymentCompleteAsync(orderId);
+        if (!result.IsSuccess)
+        {
+            return result.ErrorCode switch
+            {
+                "ORDER_NOT_FOUND" => NotFound(result),
+                _ => BadRequest(result)
+            };
+        }
+        return Ok(result);
+    }
+
     [HttpPost("admin/orders/{orderId}/cancel")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> CancelByAdmin(Guid orderId, [FromBody] CancelOrderRequestDto request)
