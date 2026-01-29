@@ -24,6 +24,7 @@ namespace FoodDelivery.Entities
         public virtual ICollection<Address> Addresses {get; set;} = new List<Address>();
         public virtual ICollection<Review> Reviews {get; set;} = new List<Review>();
         public virtual ICollection<OrderStatusHistory> OrderStatusHistories {get; set;} = new List<OrderStatusHistory>();
+        public virtual ICollection<Notification> Notifications {get; set;} = new List<Notification>();
         public Shipper? Shipper { get; set; }
 
     }

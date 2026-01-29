@@ -1,6 +1,7 @@
 using FoodDelivery.Entities;
 using FoodDelivery.Service.Interfaces;
 using FoodDelivery.DTOs.Review;
+using FoodDelivery.DTOs.Notification;
 using FoodDelivery.Common;
 using Microsoft.EntityFrameworkCore;
 using FoodDelivery.Repositories;
@@ -12,11 +13,15 @@ namespace FoodDelivery.Service.Implements
     {
         private readonly FoodContext _context;
         private readonly IReviewRepository _reviewRepository;
+        private readonly INotificationService _notificationService;
+        private readonly IUserRepository _userRepository;
 
-        public ReviewService(IReviewRepository reviewRepository, FoodContext context) 
+        public ReviewService(IReviewRepository reviewRepository, FoodContext context, INotificationService notificationService, IUserRepository userRepository) 
         {
             _reviewRepository = reviewRepository; 
             _context = context;
+            _notificationService = notificationService;
+            _userRepository = userRepository;
         }
 
         public async Task<Result> AddReviewAsync(ReviewCreateDto request, Guid customerId)
@@ -41,6 +46,29 @@ namespace FoodDelivery.Service.Implements
             };
             await _reviewRepository.AddAsync(review);
             await _context.SaveChangesAsync();
+
+            // 📢 Send notification to admin: New review posted
+            try
+            {
+                var admins = await _userRepository.GetUsersByRoleAsync("admin");
+                var ratingStars = string.Concat(Enumerable.Range(0, request.Rating).Select(_ => "⭐"));
+                foreach (var admin in admins)
+                {
+                    var notificationRequest = new NotificationRequest
+                    {
+                        Title = "Khách hàng đã để lại đánh giá",
+                        Message = $"Khách hàng vừa đánh giá sản phẩm {orderItem.ProductName}: {ratingStars} ({request.Rating}/5)",
+                        Type = (int)NotificationType.REVIEW,
+                        Link = $"/admin/products/{orderItem.ProductId}"
+                    };
+                    await _notificationService.CreateNotificationAsync(admin.Id, notificationRequest);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error sending notification: {ex.Message}");
+            }
+
             return Result.Success();
         }
         public async Task<Result<PagedResponse<ReviewHistoryResponseDto>>> GetMyReviewsAsync(Guid customerId, int page, int pageSize)

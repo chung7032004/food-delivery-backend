@@ -1,5 +1,6 @@
 using FoodDelivery.Common;
 using FoodDelivery.DTOs.Order;
+using FoodDelivery.DTOs.Notification;
 using FoodDelivery.Entities;
 using FoodDelivery.Repositories.Interfaces;
 using FoodDelivery.Service.Interfaces;
@@ -13,6 +14,8 @@ public class OrderService :IOrderService
     private readonly ICartItemRepository _cartItemRepository;
     private readonly IAddressRepository _addressRepository;
     private readonly IRestaurantRepository _restaurantRepository;
+    private readonly INotificationService _notificationService;
+    private readonly IUserRepository _userRepository;
     private readonly FoodContext _context;
     public OrderService (
         IProductRepository productRepo,
@@ -20,6 +23,8 @@ public class OrderService :IOrderService
         ICartItemRepository cartItemRepo,
         IAddressRepository addressRepo,
         IRestaurantRepository restaurantRepository,
+        INotificationService notificationService,
+        IUserRepository userRepository,
         FoodContext context)
     {
         _productRepository = productRepo;
@@ -28,6 +33,8 @@ public class OrderService :IOrderService
         _cartItemRepository = cartItemRepo;
         _addressRepository = addressRepo;
         _restaurantRepository = restaurantRepository;
+        _notificationService = notificationService;
+        _userRepository = userRepository;
     }
     public async Task<Result<CreateOrderResponseDto>> BuyNowAsync(Guid customerId,BuyNowRequestDto request)
     {
@@ -224,6 +231,45 @@ public class OrderService :IOrderService
         });
         await _orderRepository.AddAsync(order);
         await _context.SaveChangesAsync();
+
+        // 📢 Send notification to all admins about new order
+        try
+        {
+            var admins = await _userRepository.GetUsersByRoleAsync("admin");
+            Console.WriteLine($"[Notification] Found {admins.Count} admin(s)");
+            
+            if (admins.Count == 0)
+            {
+                Console.WriteLine("[Notification] WARNING: No admins found in database!");
+            }
+            
+            foreach (var admin in admins)
+            {
+                Console.WriteLine($"[Notification] Sending to admin: {admin.Id} ({admin.Email})");
+                var notificationRequest = new NotificationRequest
+                {
+                    Title = "Đơn hàng mới",
+                    Message = $"Khách hàng vừa đặt đơn #{order.OrderCode}. Tổng tiền: {order.TotalAmount:N0} VND",
+                    Type = (int)NotificationType.ORDER,
+                    Link = $"/admin/orders/{order.Id}"
+                };
+                var result = await _notificationService.CreateNotificationAsync(admin.Id, notificationRequest);
+                if (!result.IsSuccess)
+                {
+                    Console.WriteLine($"[Notification] Failed to send: {result.Message}");
+                }
+                else
+                {
+                    Console.WriteLine($"[Notification] Successfully sent to admin {admin.Email}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Notification] Error sending notification: {ex.Message}");
+            Console.WriteLine($"[Notification] Stack trace: {ex.StackTrace}");
+        }
+
         return Result<CreateOrderResponseDto>.Success(new CreateOrderResponseDto
         {
             OrderCode = order.OrderCode,
@@ -365,6 +411,28 @@ public class OrderService :IOrderService
         order.OrderDetail.CancelReason = request.Reason;
         await _orderRepository.AddOrderHistoryAsync(orderStatusHistory);
         await _context.SaveChangesAsync();
+
+        // 📢 Send notification to all admins: Customer cancelled order
+        try
+        {
+            var admins = await _userRepository.GetUsersByRoleAsync("admin");
+            foreach (var admin in admins)
+            {
+                var notificationRequest = new NotificationRequest
+                {
+                    Title = "Khách hàng hủy đơn hàng",
+                    Message = $"Khách hàng đã hủy đơn #{order.OrderCode}. Lý do: {request.Reason ?? "Không có"}",
+                    Type = (int)NotificationType.ORDER,
+                    Link = $"/admin/orders/{orderId}"
+                };
+                await _notificationService.CreateNotificationAsync(admin.Id, notificationRequest);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error sending notification: {ex.Message}");
+        }
+
         // Nếu khách đã thanh toán qua ví/thẻ -> Gọi Service hoàn tiền.
         return Result.Success();
     }
@@ -507,6 +575,24 @@ public class OrderService :IOrderService
 
         await _orderRepository.AddOrderHistoryAsync(history);
         await _context.SaveChangesAsync();
+
+        // 📢 Send notification to customer: Order confirmed
+        try
+        {
+            var notificationRequest = new NotificationRequest
+            {
+                Title = "Đơn hàng được xác nhận",
+                Message = $"Đơn hàng #{order.OrderCode} của bạn đã được nhà hàng xác nhận và đang chuẩn bị.",
+                Type = (int)NotificationType.ORDER,
+                Link = $"/customer/orders/{orderId}"
+            };
+            await _notificationService.CreateNotificationAsync(order.CustomerId, notificationRequest);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error sending notification: {ex.Message}");
+        }
+
         return Result.Success();
     }
     public async Task<Result> OutOfStockAsync(Guid adminId, Guid orderId, OutOfStockRequest request)
@@ -542,6 +628,25 @@ public class OrderService :IOrderService
         };
         await _orderRepository.AddOrderHistoryAsync(history);
         await _context.SaveChangesAsync();
+
+        // 📢 Send notification to customer: Some items out of stock
+        try
+        {
+            var removedItems = string.Join(", ", itemsToUpdate.Select(i => i.ProductName));
+            var notificationRequest = new NotificationRequest
+            {
+                Title = "Một số món hàng hết stock",
+                Message = $"Các món: {removedItems} không còn nguyên liệu. Vui lòng xác nhận tiếp tục hay hủy đơn.",
+                Type = (int)NotificationType.ORDER,
+                Link = $"/customer/orders/{orderId}"
+            };
+            await _notificationService.CreateNotificationAsync(order.CustomerId, notificationRequest);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error sending notification: {ex.Message}");
+        }
+
         return Result.Success(); 
     }
     //chuyển trạng thái qua preparing
@@ -568,7 +673,24 @@ public class OrderService :IOrderService
         };
         await _orderRepository.AddOrderHistoryAsync(history);
         await _context.SaveChangesAsync();
-        //Gửi Notification cho Customer: "Món ăn của bạn đang được chế biến"
+
+        // 📢 Send notification to customer: Order is being prepared
+        try
+        {
+            var notificationRequest = new NotificationRequest
+            {
+                Title = "Đơn hàng đang được chế biến",
+                Message = $"Đơn hàng #{order.OrderCode} đang được nhà hàng chế biến. Vui lòng chờ...",
+                Type = (int)NotificationType.ORDER,
+                Link = $"/customer/orders/{orderId}"
+            };
+            await _notificationService.CreateNotificationAsync(order.CustomerId, notificationRequest);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error sending notification: {ex.Message}");
+        }
+
         //Kích hoạt hệ thống tìm Shipper
         return Result.Success();
     }
@@ -596,7 +718,24 @@ public class OrderService :IOrderService
         };
         await _orderRepository.AddOrderHistoryAsync(history);
         await _context.SaveChangesAsync();
-        // TODO: Gửi Notification cho Shipper: "Đơn hàng #... đã sẵn sàng, mời bạn vào lấy món."
+
+        // 📢 Send notification to customer: Order ready for delivery
+        try
+        {
+            var notificationRequest = new NotificationRequest
+            {
+                Title = "Đơn hàng sẵn sàng giao",
+                Message = $"Đơn hàng #{order.OrderCode} của bạn đã sẵn sàng. Shipper sắp tới lấy hàng.",
+                Type = (int)NotificationType.DELIVERY,
+                Link = $"/customer/orders/{orderId}"
+            };
+            await _notificationService.CreateNotificationAsync(order.CustomerId, notificationRequest);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error sending notification: {ex.Message}");
+        }
+
         return Result.Success();
     }
     public async Task<Result> CancelOrderByAdminAsync(Guid adminId, Guid orderId, CancelOrderRequestDto request)
@@ -628,6 +767,96 @@ public class OrderService :IOrderService
         // Nếu khách đã thanh toán qua ví/thẻ -> Gọi Service hoàn tiền.
         // Gửi thông báo Push cho Khách hàng: "Đơn hàng của bạn đã bị hủy bởi nhà hàng".
         // Gửi thông báo cho Shipper (nếu đã có shipper nhận đơn): "Đơn hàng đã bị hủy, bạn không cần đến quán".
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Mark order as delivered by shipper
+    /// </summary>
+    public async Task<Result> MarkAsDeliveredAsync(Guid shipperId, Guid orderId)
+    {
+        var order = await _orderRepository.GetOrderById(orderId);
+        if (order == null)
+        {
+            return Result.Failure("ORDER_NOT_FOUND", "Không tìm thấy đơn hàng.");
+        }
+        if (order.OrderDetail.Status != OrderStatus.Shipping)
+        {
+            return Result.Failure("INVALID_STATUS", "Đơn hàng không ở trạng thái đang giao.");
+        }
+
+        order.OrderDetail.Status = OrderStatus.Completed;
+        order.OrderDetail.ActualDeliveryTime = DateTime.UtcNow;
+
+        var history = new OrderStatusHistory
+        {
+            ActionBy = OrderActionBy.Shipper,
+            ChangeByUserId = shipperId,
+            ChangedAt = DateTime.UtcNow,
+            Note = "Shipper đã giao thành công đơn hàng.",
+            OrderId = orderId,
+            Status = OrderStatus.Completed
+        };
+
+        await _orderRepository.AddOrderHistoryAsync(history);
+        await _context.SaveChangesAsync();
+
+        // 📢 Send notification to customer: Order delivered
+        try
+        {
+            var notificationRequest = new NotificationRequest
+            {
+                Title = "Đơn hàng đã được giao",
+                Message = $"Đơn hàng #{order.OrderCode} của bạn đã được giao thành công!",
+                Type = (int)NotificationType.DELIVERY,
+                Link = $"/customer/orders/{orderId}"
+            };
+            await _notificationService.CreateNotificationAsync(order.CustomerId, notificationRequest);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error sending notification: {ex.Message}");
+        }
+
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Mark order payment as complete (when customer pays)
+    /// </summary>
+    public async Task<Result> MarkPaymentCompleteAsync(Guid orderId)
+    {
+        var order = await _orderRepository.GetOrderById(orderId);
+        if (order == null)
+        {
+            return Result.Failure("ORDER_NOT_FOUND", "Không tìm thấy đơn hàng.");
+        }
+
+        order.OrderDetail.PaymentStatus = PaymentStatus.Paid;
+
+        await _context.SaveChangesAsync();
+
+        // 📢 Send notification to all admins: Payment received
+        try
+        {
+            var admins = await _userRepository.GetUsersByRoleAsync("admin");
+            foreach (var admin in admins)
+            {
+                var notificationRequest = new NotificationRequest
+                {
+                    Title = "Khách hàng đã thanh toán",
+                    Message = $"Khách hàng đã thanh toán đơn #{order.OrderCode}. Tổng tiền: {order.TotalAmount:N0} VND",
+                    Type = (int)NotificationType.PAYMENT,
+                    Link = $"/admin/orders/{orderId}"
+                };
+                await _notificationService.CreateNotificationAsync(admin.Id, notificationRequest);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error sending notification: {ex.Message}");
+        }
+
         return Result.Success();
     }            
     //tiệm đóng cửa

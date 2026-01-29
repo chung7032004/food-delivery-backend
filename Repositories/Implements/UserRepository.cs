@@ -43,6 +43,15 @@ namespace FoodDelivery.Repositories.Implementations
             }
             return await _context.Users.AnyAsync(u=>u.Email == email.Trim());
         }
+        public async Task<List<User>> GetUsersByRoleAsync(string roleName)
+        {
+            return await _context.Users
+                .AsNoTracking()
+                .Include(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role)
+                .Where(u => u.UserRoles.Any(ur => ur.Role.Name.ToLower() == roleName.ToLower()))
+                .ToListAsync();
+        }
         public async Task AddAsync(User user)
         {
             await _context.Users.AddAsync(user);
