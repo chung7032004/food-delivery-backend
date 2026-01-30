@@ -80,6 +80,7 @@ namespace FoodDelivery.Service.Implements
             {
                 Id = r.Id,
                 ProductName = r.Product.Name, 
+                productId = r.ProductId,
                 ProductImageUrl = r.Product.ImageUrl, 
                 Rating = r.Rating,
                 Comment = r.Comment,
@@ -89,7 +90,7 @@ namespace FoodDelivery.Service.Implements
             var totalCount = await _reviewRepository.MyTotalCountReviewAsync(customerId);
             var responseMeta = new PaginationMeta(
                 Page : page,
-                PageSize : pageSize,
+                PageSize : reviewsResponse.Count,
                 TotalCount : totalCount,
                 TotalPages : (int)Math.Ceiling((double)totalCount/pageSize)
             );

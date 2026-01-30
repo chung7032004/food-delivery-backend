@@ -3,6 +3,7 @@ namespace FoodDelivery.DTOs.Review
     public class ReviewHistoryResponseDto
     {
         public Guid Id { get; set; }
+        public Guid productId {get; set;}
         public string ProductName { get; set; } = null!;
         public string? ProductImageUrl { get; set; }
         public int Rating { get; set; }

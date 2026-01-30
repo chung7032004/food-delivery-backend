@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using FoodDelivery.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -18,11 +17,11 @@ public class ReviewRepository : IReviewRepository
     public async Task<List<Review>> GetMyReviewAsync(Guid customerId, int page, int pageSize)
     {
         return await _context.Reviews.AsNoTracking()
-            .Where(r=>r.CustomerId == customerId)
+            .Where(r=>r.CustomerId == customerId && !r.IsHidden)
             .Include(r=>r.Product)
             .OrderByDescending(r=>r.CreatedAt)
             .Skip((page-1)*pageSize)
-            .Take(page)
+            .Take(pageSize)
             .ToListAsync();
     }
     public async Task<bool> ExistsByOrderItemIdAsync(Guid OrderItem)
