@@ -115,6 +115,8 @@ builder.Services.AddScoped<IShipperService, ShipperService>();
 builder.Services.AddScoped<IShipperRepository, ShipperRepository>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IEmailService,EmailService>();
+builder.Services.AddScoped<IUserService, UserService>();
+
 
 builder.Services.AddAuthorization();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(option =>

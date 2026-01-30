@@ -1,4 +1,5 @@
 using FoodDelivery.Entities;
+using FoodDelivery.DTOs.User;
 
 namespace FoodDelivery.Repositories.Interfaces
 {
@@ -15,6 +16,11 @@ namespace FoodDelivery.Repositories.Interfaces
         Task UpdateLastLoginAsync(Guid userId);
         Task AddUserRoleAsync(UserRole userRole);
         Task ChangePasswordAsync(Guid userId, byte[] passwordHash, byte[] passwordSalt);
-       
+        Task<List<AdminUserListDto>> GetAllUsersAsync(UserFilterModel filter);
+        Task<int> GetTotalUsersCountAsync(UserFilterModel filter);
+        Task<AdminUserDetailDto?> GetUserDetailAsync(Guid userId);
+        Task<bool> BlockUserAsync(Guid userId);
+        Task<bool> UnblockUserAsync(Guid userId);
+        Task<List<UserOrderSummary>> GetUserRecentOrdersAsync(Guid userId, int take = 5);
     }
 }
