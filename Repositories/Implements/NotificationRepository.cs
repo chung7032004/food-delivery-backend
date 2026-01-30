@@ -38,7 +38,7 @@ public class NotificationRepository : INotificationRepository
             .ToListAsync();
     }
 
-    public async Task<Notification> GetByIdAsync(Guid notificationId)
+    public async Task<Notification?> GetByIdAsync(Guid notificationId)
     {
         return await _context.Notifications.FindAsync(notificationId);
     }
@@ -50,10 +50,10 @@ public class NotificationRepository : INotificationRepository
             .CountAsync();
     }
 
-    public async Task<Notification> UpdateAsync(Notification notification)
+    public Task<Notification> UpdateAsync(Notification notification)
     {
         _context.Notifications.Update(notification);
-        return notification;
+        return Task.FromResult(notification);
     }
 
     public async Task DeleteAsync(Guid notificationId)
