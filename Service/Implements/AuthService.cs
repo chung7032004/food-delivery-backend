@@ -106,6 +106,10 @@ namespace FoodDelivery.Service.Implementations
                 CreatedAt = DateTime.UtcNow,
                 IsRevoked = false, 
             };
+            
+            // Cập nhật LastLogin khi đăng nhập thành công
+            await _userRepository.UpdateLastLoginAsync(user.Id);
+            
             await _refreshTokenRepository.AddAsync(refresh);
             await _unitOfWork.SaveChangesAsync();
             return Result<LoginResponse>.Success(new LoginResponse
