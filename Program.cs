@@ -99,6 +99,7 @@ builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IRestaurantRepository,RestaurantRepository>();
 builder.Services.AddScoped<IReviewRepository,ReviewRepository>();
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+builder.Services.AddScoped<IPasswordResetOtpRepository,PasswordResetOtpRepository>();
 
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
@@ -113,7 +114,9 @@ builder.Services.AddScoped<IRestaurantService,RestaurantService>();
 builder.Services.AddScoped<IShipperService, ShipperService>();
 builder.Services.AddScoped<IShipperRepository, ShipperRepository>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<IEmailService,EmailService>();
 builder.Services.AddScoped<IUserService, UserService>();
+
 
 builder.Services.AddAuthorization();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(option =>

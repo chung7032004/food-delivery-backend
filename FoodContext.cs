@@ -21,6 +21,7 @@ public class FoodContext : DbContext
     public DbSet<Role> Roles{get;set;}
     public DbSet<User> Users{get;set;}
     public DbSet<UserRole> UserRoles{get;set;}
+    public DbSet<PasswordResetOtp> PasswordResetOtp{get; set;}
     public override async Task<int> SaveChangesAsync(
         CancellationToken cancellationToken = default)
     {
@@ -64,6 +65,15 @@ public class FoodContext : DbContext
             .HasOne(rf=>rf.User)
             .WithMany(u=>u.RefreshTokens)
             .HasForeignKey(rt=>rt.UserId);  
+        modelBuilder.Entity<PasswordResetOtp>()
+            .HasOne(pr=>pr.User)
+            .WithMany(u=>u.PasswordResetOtps)
+            .HasForeignKey(pr=>pr.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<PasswordResetOtp>()
+            .HasIndex(x => x.UserId);
+        modelBuilder.Entity<PasswordResetOtp>()
+            .HasIndex(x => x.ExpiresAt);
         
         modelBuilder.Entity<User>()
             .HasOne(u=>u.Cart)
