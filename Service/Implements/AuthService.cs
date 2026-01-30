@@ -8,6 +8,7 @@ using FoodDelivery.Entities;
 using FoodDelivery.Repositories;
 using FoodDelivery.Repositories.Interfaces;
 using FoodDelivery.Service.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 namespace FoodDelivery.Service.Implementations
 {
@@ -18,13 +19,22 @@ namespace FoodDelivery.Service.Implementations
         private readonly IRefreshTokenRepository _refreshTokenRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly string _tokenSecretKey;
-        public AuthService(IUserRepository userRepository, IRefreshTokenRepository refreshTokenRepository,IRoleRepository roleRepository,IUnitOfWork unitOfWork, IConfiguration configuration)
+        private readonly IEmailService _emailService;
+        private readonly IPasswordResetOtpRepository _passwordResetOtpRepository;
+        private readonly ILogger<AuthService> _logger;
+        public AuthService(IUserRepository userRepository, IRefreshTokenRepository refreshTokenRepository,
+                            IRoleRepository roleRepository,IUnitOfWork unitOfWork, IConfiguration configuration,
+                            IEmailService emailService, IPasswordResetOtpRepository passwordResetOtpRepository,
+                            ILogger<AuthService> logger)
         {
             _userRepository = userRepository;
             _refreshTokenRepository = refreshTokenRepository;
             _tokenSecretKey = configuration["TokenSecretKey"] ?? "default_secret_key_2025_food_delivery";
             _unitOfWork = unitOfWork;
             _roleRepository = roleRepository;
+            _emailService = emailService;
+            _passwordResetOtpRepository = passwordResetOtpRepository;
+            _logger = logger;
         }
         public async Task <Result> RegisterUserAsync(string email, string password, string fullName, string phone)
         {
@@ -235,6 +245,96 @@ namespace FoodDelivery.Service.Implementations
             var newPasswordHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(changePasswordRequest.NewPassword));
             await _userRepository.ChangePasswordAsync(userId,newPasswordHash,newPasswordSalt);
             return Result.Success();
+        }
+        public async Task<Result> SendOtpAsync (SendOtpRequest request)
+        {
+            try
+            {
+                var user = await _userRepository.GetByEmailAsync(request.Email);
+                if(user == null)
+                {
+                    return Result.Failure("EMAIL_INVALID","Không tồn tại tài khoảng.");
+                }
+                var oldOpts = await _passwordResetOtpRepository.GetAllByUserId(user.Id);
+                await _passwordResetOtpRepository.DeleteRangeAsync(oldOpts);
+                var otp = new Random().Next(100000,999999).ToString();
+                var hmac = new HMACSHA512();
+                var otpHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(otp));
+                var reset = new PasswordResetOtp{
+                    UserId = user.Id,
+                    Email = user.Email,
+                    OtpHash = otpHash,
+                    OtpSalt = hmac.Key,
+                    ExpiresAt = DateTime.UtcNow.AddMinutes(10),
+                    RetryCount = 0
+                };
+                await _passwordResetOtpRepository.AddAsync(reset);
+                await _unitOfWork.SaveChangesAsync();
+                try{
+                await _emailService.SendOtpEmailAsync(request.Email,otp);
+                }
+                catch(Exception ex)
+                {
+                    _logger.LogError(ex, "Lỗi gửi email OTP cho {Email}", request.Email);
+                    return Result.Failure("EMAIL_SERVICE_ERROR", "Không thể gửi email lúc này. Vui lòng thử lại sau.");
+                }
+                return Result.Success();
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Lỗi Database khi lưu OTP cho {Email}", request.Email);
+                return Result.Failure("DATABASE_ERROR", "Lỗi hệ thống khi xử lý yêu cầu.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi không xác định trong SendOtpAsync cho {Email}", request.Email);
+                return Result.Failure("SERVER_ERROR", "Đã xảy ra lỗi ngoài ý muốn.");
+            }
+        }
+        public async Task<Result> ResetPasswordAsync(string email, string otp, string newPassword)
+        {
+            try{
+                var record = await _passwordResetOtpRepository.GetByEmailAsync(email);
+                if(record == null)
+                {
+                    return Result.Failure("OTP_INVALID","Yêu cầu khôi phục không tồn tại");
+                }
+                if (record.RetryCount >= 5)
+                {
+                    //Nếu sai quá nhiều, xóa luôn OTP để bắt người dùng tạo yêu cầu mới
+                    await _passwordResetOtpRepository.DeleteAsync(record);
+                    await _unitOfWork.SaveChangesAsync();
+                    return Result.Failure("OTP_LOCKED", "Bạn đã nhập sai quá nhiều lần. Vui lòng yêu cầu mã mới.");
+                }
+                if(record.ExpiresAt  < DateTime.UtcNow)
+                {
+                    return Result.Failure("OTP_EXPIRED", "Mã OTP đã hết hạn.");
+                }
+                if(!VerifyPasswordHash(otp, record.OtpHash, record.OtpSalt))
+                {
+                    record.RetryCount++;
+                    await _unitOfWork.SaveChangesAsync();
+                    return Result.Failure("OTP_INVALID","OTP không đúng.");
+                }
+                var hmac = new HMACSHA512();
+                await _refreshTokenRepository.RevokeAllAsync(record.UserId);
+                var newPasswordSalt = hmac.Key;
+                var newPasswordHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(newPassword));
+                await _userRepository.ChangePasswordAsync(record.UserId,newPasswordHash,newPasswordSalt);
+                await _passwordResetOtpRepository.DeleteAsync(record);
+                await _unitOfWork.SaveChangesAsync();
+                return Result.Success();
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Lỗi Database khi cập nhật mật khẩu");
+                return Result.Failure("DATABASE_ERROR", "Lỗi hệ thống khi xử lý yêu cầu.");
+            }
+            catch(Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi không xác định {ex}",ex);
+                return Result.Failure("SERVER_ERROR", "Đã xảy ra lỗi ngoài ý muốn.");
+            }
         }
     }
 }
