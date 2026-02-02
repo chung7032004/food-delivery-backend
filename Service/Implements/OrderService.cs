@@ -373,6 +373,7 @@ public class OrderService :IOrderService
         {
             response.Items.Add(new OrderItemResponse
             {
+                OrderItemId = item.Id,
                 ProductId = item.ProductId,
                 ProductName = item.ProductName ?? string.Empty,
                 ProductImage  = item.ProductImage ?? string.Empty,

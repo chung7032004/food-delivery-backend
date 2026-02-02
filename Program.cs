@@ -1,4 +1,5 @@
 
+using FoodDelivery.Common;
 using FoodDelivery.Middlewares;
 using FoodDelivery.Repositories;
 using FoodDelivery.Repositories.Implementations;
@@ -11,6 +12,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using System.Text.Json;
 /*using System.Security.Cryptography;
 using System.Text;
     var password = "12345678";
@@ -28,7 +30,7 @@ using System.Text;
     return; // chặn app chạy tiếp
     */
 
-    var builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 
 
     builder.Services.AddControllers();
@@ -123,7 +125,19 @@ builder.Services.AddScoped<IStaffService, StaffService>();
 builder.Services.AddAuthorization();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(option =>
 {
-
+    option.Events = new JwtBearerEvents
+    {
+        OnChallenge = async context =>
+        {
+            context.HandleResponse();
+            context.Response.ContentType = "application/json";
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            var result = Result.Failure("UNAUTHORIZED", "Yêu cầu xác thực.");
+            var jsonOptions = new JsonSerializerOptions{PropertyNamingPolicy = JsonNamingPolicy.CamelCase};
+            var jsonString = JsonSerializer.Serialize(result,jsonOptions);
+            await context.Response.WriteAsync(jsonString);  
+        }
+    };
         option.TokenValidationParameters = new TokenValidationParameters
         {
             // 1. Xác minh Khóa Bí mật (Khóa quan trọng nhất!)
@@ -157,6 +171,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
     app.UseRouting();
     //Kích hoạt CORS (Phải đặt trước UseAuthorization)
     app.UseCors("AllowReactApp");
+    app.UseMiddleware<ExceptionMiddleware>();// Bắt lỗi chung toàn ứng dụng
     app.UseAuthentication(); //Kiểm tra bạn là ai 
     app.UseAuthorization();// Kiểm tra bạn có quyền truy cập gì
     app.UseMiddleware<RestaurantOpenMiddleware>();// chặn order khi quán đóng 
