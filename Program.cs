@@ -116,6 +116,8 @@ builder.Services.AddScoped<IShipperRepository, ShipperRepository>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IEmailService,EmailService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IStaffRepository, StaffRepository>();
+builder.Services.AddScoped<IStaffService, StaffService>();
 
 
 builder.Services.AddAuthorization();

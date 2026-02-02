@@ -10,6 +10,7 @@ public class Notification
     public bool IsRead { get; set; } = false;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public string? Link { get; set; } // Link to related resource (e.g., /orders/123)
+    public Guid? RelatedOrderId { get; set; } // Link to related order for order issues
     
     // Foreign key
     public User User { get; set; } = null!;
