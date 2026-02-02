@@ -7,5 +7,6 @@ namespace FoodDelivery.DTOs.Account
         public string? Email {get; set;}
         public string? Phone {get; set;} 
         public string? AvatarUrl {get; set;}
+        public List<string> Roles { get; set; } = new List<string>();
     }
 }
