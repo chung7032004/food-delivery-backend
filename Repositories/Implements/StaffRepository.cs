@@ -25,7 +25,7 @@ public class StaffRepository : IStaffRepository
     public async Task<List<OrderDto>> GetOrdersByRestaurant(Guid restaurantId)
     {
         // Get all active orders (not completed or cancelled) for the restaurant
-        // Note: Order entity doesn't have RestaurantId foreign key, so we can't filter by it
+         // Note: Order entity doesn't have RestaurantId foreign key, so we can't filter by it
         // Staff accessing this endpoint should only see orders from their restaurant
         var orders = await _context.Orders
             .Include(o => o.OrderDetail)
