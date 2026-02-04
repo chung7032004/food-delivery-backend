@@ -10,11 +10,18 @@ namespace FoodDelivery.Service.Interfaces
         Task<bool> MarkSuccessAsync(Guid orderId);
         Task<bool> MarkFailedAsync(Guid orderId, string reason, Guid? cancelledBy = null);
 
+        // --- DASHBOARD ---
+        Task<object> GetShipperStatsAsync(Guid userId); // Trả về số liệu thống kê
+        
         // --- 5 chức năng quản lý 
         Task<List<User>> GetAllShippersAsync(); // Chức năng 2
         Task<Shipper?> GetShipperByIdAsync(Guid userId); // Chức năng 3
         Task<bool> ToggleShipperStatusAsync(Guid userId, bool isActive); // Chức năng 4
         Task<List<OrderStatusHistory>> GetShipperHistoryAsync(Guid userId); // Chức năng 5
         Task<bool> AssignShipperRoleAsync(Guid userId); // Chức năng 1
+
+        Task<List<OrderAdminSummaryResponse>> GetAssignedOrdersAsync(Guid userId);
+        Task<OrderDetailResponse?> GetOrderByIdAsync(Guid orderId);
+        Task<bool> UpdateShipperProfileAsync(Guid userId, UpdateShipperProfileDto request);
     }
 }

@@ -26,6 +26,68 @@ namespace FoodDelivery.Service.Implements
             return await _shipperRepository.SaveChangesAsync();
         }
 
+        public async Task<object> GetShipperStatsAsync(Guid userId)
+        {
+           
+            var history = await _shipperRepository.GetShipperHistoryAsync(userId);
+            
+            
+            var shipper = await _shipperRepository.GetShipperByIdAsync(userId);
+            
+           
+            var totalCompleted = history.Count(h => h.Status == OrderStatus.Completed);
+            var inProgress = shipper?.Orders?.Count(o => o.Status == OrderStatus.Shipping) ?? 0;
+            var pendingCount = shipper?.Orders?.Count(o => o.Status == OrderStatus.Pending) ?? 0;
+            
+            return new 
+            {
+                totalDeliveries = totalCompleted,
+                completedDeliveries = totalCompleted,
+                pendingDeliveries = pendingCount,
+                deliveryInProgress = inProgress,
+                earningToday = 0, // Cần truy vấn thêm doanh thu nếu cần
+                averageRating = 5.0
+            };
+        }
+
+       public async Task<List<OrderAdminSummaryResponse>> GetAssignedOrdersAsync(Guid userId)
+        {
+            var shipper = await _shipperRepository.GetShipperByIdAsync(userId);
+            if (shipper == null || shipper.Orders == null) return new List<OrderAdminSummaryResponse>();
+
+            return shipper.Orders.Select(o => new OrderAdminSummaryResponse
+            {
+                Id = o.OrderId,
+                OrderCode = o.Order?.OrderCode ?? o.OrderId.ToString().Substring(0, 8),
+                CustomerName = o.Order?.Customer?.FullName ?? "Khách hàng",
+                TotalAmount = o.Order?.TotalAmount ?? 0,
+                Status = o.Status.ToString(),
+                CreatedAt = o.Order?.CreatedAt ?? DateTime.Now
+            }).ToList();
+        }
+        
+        public async Task<OrderDetailResponse?> GetOrderByIdAsync(Guid orderId)
+        {
+            
+            var orderDetail = await _shipperRepository.GetOrderDetailByIdAsync(orderId);
+            
+            if (orderDetail == null || orderDetail.Order == null) return null;
+
+            
+            return new OrderDetailResponse
+            {
+                OrderId = orderDetail.OrderId,
+                OrderCode = orderDetail.Order.OrderCode,
+                Status = orderDetail.Status.ToString(),
+                CustomerName = orderDetail.Order.Customer?.FullName ?? "Khách hàng",
+                PhoneNumber = orderDetail.Order.ReceiverPhone ?? "Không có số điện thoại", 
+                DeliveryAddress = orderDetail.Order.ShippingAddress ?? "Không có địa chỉ",
+                TotalAmount = orderDetail.Order.TotalAmount,
+                CreatedAt = orderDetail.Order.CreatedAt
+                
+            };
+        }
+
         
 
         public async Task<bool> MarkSuccessAsync(Guid orderId)
@@ -65,7 +127,7 @@ namespace FoodDelivery.Service.Implements
             var shipper = await _shipperRepository.GetShipperByIdAsync(userId);
             if (shipper == null || shipper.User == null) return false;
 
-            // Sửa chỗ này: Truy cập vào thuộc tính User để đổi IsActive
+           
             shipper.User.IsActive = isActive; 
 
             return await _shipperRepository.SaveChangesAsync();
@@ -78,5 +140,20 @@ namespace FoodDelivery.Service.Implements
             await _shipperRepository.AddUserRoleAsync(new UserRole { UserId = userId, RoleId = role.Id });
             return await _shipperRepository.SaveChangesAsync();
         }
+
+        public async Task<bool> UpdateShipperProfileAsync(Guid userId, UpdateShipperProfileDto request)
+        {
+            var shipper = await _shipperRepository.GetShipperByIdAsync(userId);
+            if (shipper == null) return false;
+
+            if (request.IsAvailable.HasValue)
+            {
+                shipper.IsAvailable = request.IsAvailable.Value;
+            }
+            shipper.UpdatedAt = DateTime.Now;
+
+            return await _shipperRepository.SaveChangesAsync();
+        }
+        
     }
 }

@@ -28,8 +28,8 @@ using System.Text;
     return; // chặn app chạy tiếp
     */
 
-    var builder = WebApplication.CreateBuilder(args);
-
+var builder = WebApplication.CreateBuilder(args);
+    
 
     builder.Services.AddControllers();
     // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -70,9 +70,10 @@ using System.Text;
 
 //Cấu hình kết nối Database Postgresql
 var configuration = builder.Configuration;
+var connectionString = "Host=localhost;Database=FoodDelivery;Username=postgres;Password=123456";
 builder.Services.AddDbContext<FoodContext>(options =>
     options.UseNpgsql(
-        configuration.GetConnectionString("Default"),
+        connectionString,
         npgsqlOptions => npgsqlOptions.EnableRetryOnFailure()
     )
 );
@@ -80,7 +81,7 @@ builder.Services.AddDbContext<FoodContext>(options =>
 //Định nghĩa chính sách CORS
 builder.Services.AddCors(options => {
     options.AddPolicy("AllowReactApp",
-        policy => policy.WithOrigins("http://localhost:8080", "http://localhost:5173") // React dev ports
+        policy => policy.WithOrigins("http://localhost:8080", "http://localhost:8081", "http://localhost:5173") // React dev ports
                         .AllowAnyMethod()
                         .AllowAnyHeader()
                         .AllowCredentials());

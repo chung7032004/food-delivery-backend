@@ -10,9 +10,10 @@ namespace FoodDelivery.Entities
         public string ReceiverName {get; set;} = string.Empty;
         public string ReceiverPhone {get; set;} = string.Empty;
         public decimal TotalAmount {get; set;}
-        public decimal ShippingFee {get; set;}
+        public decimal ShippingFee {get; set;} 
         public string? Note {get; set;}
-        public DateTime CreatedAt{get; set;}
+        public DateTime CreatedAt{get; set;} = DateTime.Now;
+        public DateTime? UpdatedAt{get; set;}
     
         public virtual OrderDetail OrderDetail {get; set;} = null!; 
         public virtual ICollection<OrderItem> OrderItems {get; set;} = new List<OrderItem>();
