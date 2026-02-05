@@ -11,63 +11,104 @@ namespace FoodDelivery.Controllers
     public class ShipperController : ControllerBase
     {
         private readonly IShipperService _service;
-        public ShipperController(IShipperService service) { _service = service; }
-        [HttpPost("confirm-pickup/{orderId}")]
-        [Authorize(Roles ="Shipper")]
-        public async Task<IActionResult> Confirm(Guid orderId)
+
+        public ShipperController(IShipperService service)
         {
-            Guid shipperId;
+            _service = service;
+        }
+
+        #region --- SHIPPER CORE FUNCTIONS ---
+
+        // 1. Lấy thống kê Dashboard cho Shipper
+        [HttpGet("dashboard-stats")]
+        [Authorize(Roles = "Shipper")]
+        public async Task<IActionResult> GetDashboardStats()
+        {
             try
             {
-                shipperId = HttpContext.User.GetUserId();
+                var userId = HttpContext.User.GetUserId();
+                var stats = await _service.GetShipperStatsAsync(userId);
+                return Ok(stats);
             }
-            catch
+            catch (Exception ex)
             {
-                return Unauthorized(new { message = "Không tìm thấy shipper trong token." });
+                return BadRequest(new { message = "Lỗi lấy thống kê: " + ex.Message });
             }
+        }
 
-            var ok = await _service.ConfirmPickUpAsync(orderId, shipperId);
-            if (!ok) return NotFound(new { message = "Order detail not found." });
+        // 2. Lấy danh sách đơn hàng được phân công
+        [HttpGet("assigned-orders")]
+        [Authorize(Roles = "Shipper")]
+        public async Task<IActionResult> GetAssignedOrders()
+        {
+            try
+            {
+                var userId = HttpContext.User.GetUserId();
+                var orders = await _service.GetAssignedOrdersAsync(userId);
+                return Ok(orders);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = "Lỗi lấy danh sách đơn hàng: " + ex.Message });
+            }
+        }
+
+        // 3. Xem chi tiết một đơn hàng cụ thể
+        [HttpGet("order/{orderId}")]
+        [Authorize(Roles = "Shipper")]
+        public async Task<IActionResult> GetOrderById(Guid orderId)
+        {
+            var order = await _service.GetOrderByIdAsync(orderId);
+            if (order == null) return NotFound(new { message = "Không tìm thấy chi tiết đơn hàng" });
+            return Ok(order);
+        }
+
+        // 4. Xác nhận đã lấy hàng từ quán
+        [HttpPost("confirm-pickup/{orderId}")]
+        [Authorize(Roles = "Shipper")]
+        public async Task<IActionResult> Confirm(Guid orderId)
+        {
+            var userId = HttpContext.User.GetUserId();
+            var ok = await _service.ConfirmPickUpAsync(orderId, userId);
+            if (!ok) return BadRequest(new { message = "Xác nhận lấy hàng thất bại hoặc đơn không tồn tại." });
             return Ok(new { message = "Xác nhận lấy hàng thành công" });
         }
 
+        // 5. Cập nhật giao hàng thành công
         [HttpPost("delivery-success/{orderId}")]
-        [Authorize(Roles ="Shipper")]
+        [Authorize(Roles = "Shipper")]
         public async Task<IActionResult> Success(Guid orderId)
         {
             var ok = await _service.MarkSuccessAsync(orderId);
-            if (!ok) return NotFound(new { message = "Order detail not found." });
+            if (!ok) return BadRequest(new { message = "Không thể cập nhật trạng thái thành công." });
             return Ok(new { message = "Đã cập nhật: Giao hàng thành công" });
         }
 
+        // 6. Cập nhật giao hàng thất bại (kèm lý do)
         [HttpPost("delivery-failed")]
-        [Authorize(Roles ="Shipper")]
+        [Authorize(Roles = "Shipper")]
         public async Task<IActionResult> Failed([FromBody] ShipperActionDTO dto)
         {
-            Guid? shipperId = null;
-            try
-            {
-                shipperId = HttpContext.User.GetUserId();
-            }
-            catch
-            {
-                // ignore, cancelledBy remains null
-            }
-
-            var ok = await _service.MarkFailedAsync(dto.OrderId, dto.Reason ?? "Không có lý do", shipperId);
-            if (!ok) return NotFound(new { message = "Order detail not found." });
+            var userId = HttpContext.User.GetUserId();
+            var ok = await _service.MarkFailedAsync(dto.OrderId, dto.Reason ?? "Không có lý do", userId);
+            if (!ok) return BadRequest(new { message = "Không thể cập nhật trạng thái thất bại." });
             return Ok(new { message = "Đã cập nhật: Giao hàng thất bại" });
         }
+
+        #endregion
+
+        #region --- ADMIN & MANAGEMENT FUNCTIONS ---
+
         [HttpGet("all-shippers")]
-        [Authorize(Roles = "Admin")] // Chỉ Admin mới được xem danh sách
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetAllShippers()
         {
             var result = await _service.GetAllShippersAsync();
             return Ok(result);
         }
 
-        // 3. Xem chi tiết shipper
         [HttpGet("detail/{userId}")]
+        [Authorize(Roles = "Admin,Shipper")]
         public async Task<IActionResult> GetDetail(Guid userId)
         {
             var result = await _service.GetShipperByIdAsync(userId);
@@ -75,7 +116,6 @@ namespace FoodDelivery.Controllers
             return Ok(result);
         }
 
-        // 4. Kích hoạt / khóa shipper
         [HttpPut("toggle-status/{userId}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> ToggleStatus(Guid userId, [FromQuery] bool isActive)
@@ -85,7 +125,6 @@ namespace FoodDelivery.Controllers
             return Ok(new { message = isActive ? "Đã kích hoạt shipper" : "Đã khóa shipper" });
         }
 
-        // 5. Xem lịch sử giao hàng của 1 shipper
         [HttpGet("history/{userId}")]
         public async Task<IActionResult> GetHistory(Guid userId)
         {
@@ -93,7 +132,6 @@ namespace FoodDelivery.Controllers
             return Ok(result);
         }
 
-        // 1. Tạo shipper từ user (Phân quyền)
         [HttpPost("assign-role/{userId}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> AssignRole(Guid userId)
@@ -102,8 +140,17 @@ namespace FoodDelivery.Controllers
             if (!ok) return BadRequest(new { message = "Không thể phân quyền cho user này" });
             return Ok(new { message = "Đã chuyển user thành shipper thành công" });
         }
-        
+
+        [HttpPut("profile")]
+        [Authorize(Roles = "Shipper")]
+        public async Task<IActionResult> UpdateProfile([FromBody] UpdateShipperProfileDto request)
+        {
+            var userId = HttpContext.User.GetUserId();
+            var ok = await _service.UpdateShipperProfileAsync(userId, request);
+            if (!ok) return BadRequest(new { message = "Cập nhật profile thất bại" });
+            return Ok(new { message = "Cập nhật profile thành công" });
+        }
+
+        #endregion
     }
-    
-    
 }

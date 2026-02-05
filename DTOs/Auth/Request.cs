@@ -8,7 +8,7 @@ public class RegisterRequest
     [EmailAddress(ErrorMessage = "Email không hợp lệ")]
     public string Email {get; set;} = string.Empty;
     [Required(ErrorMessage = "Mật khẩu là bắt buộc")]
-    [MinLength(8, ErrorMessage = "Mật khẩu phải có ít nhất 8 ký tự")]
+    [MinLength(6, ErrorMessage = "Mật khẩu phải có ít nhất 6 ký tự")]
     public string Password {get; set;} = string.Empty;
     [Required(ErrorMessage = "Họ tên là bắt buộc")]
     public string FullName { get; set; } = string.Empty;
@@ -20,7 +20,8 @@ public class LoginRequest
 {
     [EmailAddress]
     public string Email {get; set;} = string.Empty;
-    [MinLength(8)]
+    [Required(ErrorMessage = "Mật khẩu là bắt buộc")]
+    [MinLength(6, ErrorMessage = "Mật khẩu phải có ít nhất 6 ký tự")]
     public string Password {get; set;} = string.Empty;
 }
 public class LogoutRequest

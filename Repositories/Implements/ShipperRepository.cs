@@ -24,8 +24,10 @@ namespace FoodDelivery.Repositories.Implements
         public async Task<Shipper?> GetShipperByIdAsync(Guid userId)
         {
             return await _context.Shippers
-            .Include(s => s.User) 
-            .FirstOrDefaultAsync(s => s.UserId == userId);
+                .Include(s => s.User)
+                .Include(s => s.Orders) // Đây là ICollection<OrderDetail>
+                    .ThenInclude(o => o.Order) // Lấy thông tin bảng Order cha để có CreatedAt
+                .FirstOrDefaultAsync(s => s.UserId == userId);
         }
             
         public async Task<List<OrderStatusHistory>> GetShipperHistoryAsync(Guid userId) => 
