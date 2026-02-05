@@ -1,4 +1,5 @@
 using FoodDelivery.DTOs.Staff;
+using FoodDelivery.DTOs.Review;
 using FoodDelivery.Entities;
 using FoodDelivery.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -240,4 +241,80 @@ public class StaffRepository : IStaffRepository
             _ => issueType
         };
     }
+
+    public async Task<List<OrderDto>> GetCompletedOrdersByRestaurant(Guid restaurantId, int days = 30)
+    {
+        // Get completed and cancelled orders from the last 'days' number of days
+        var startDate = DateTime.UtcNow.AddDays(-days);
+        
+        var orders = await _context.Orders
+            .Include(o => o.OrderDetail)
+            .Include(o => o.OrderItems)
+            .Include(o => o.Customer)
+            .Where(o => o.OrderDetail != null && 
+                   (o.OrderDetail.Status == OrderStatus.Completed ||
+                    o.OrderDetail.Status == OrderStatus.Cancelled ||
+                    o.OrderDetail.Status == OrderStatus.Shipping) &&
+                   o.CreatedAt >= startDate)
+            .AsNoTracking()
+            .Select(o => new OrderDto
+            {
+                Id = o.Id,
+                OrderNumber = o.OrderCode,
+                CustomerName = o.Customer!.FullName ?? "Unknown",
+                CustomerPhone = o.Customer.Phone ?? "",
+                TotalAmount = o.TotalAmount,
+                Status = (int)(o.OrderDetail!.Status),
+                CreatedAt = o.CreatedAt,
+                Items = o.OrderItems!.Select(oi => new OrderItemDto
+                {
+                    ProductName = oi.ProductName,
+                    Quantity = oi.Quantity,
+                    Price = oi.UnitPrice
+                }).ToList()
+            })
+            .OrderByDescending(o => o.CreatedAt)
+            .ToListAsync();
+
+        return orders;
+    }
+
+    public async Task<List<ReviewDto>> GetRestaurantReviewsAsync(Guid restaurantId, int? rating = null)
+    {
+        // Get all reviews for products from orders related to this restaurant
+        // Join Reviews -> OrderItems -> Orders to filter by restaurant's orders
+        var query = _context.Reviews
+            .AsNoTracking()
+            .Include(r => r.Customer)
+            .Include(r => r.OrderItem)
+            .ThenInclude(oi => oi.Order)
+            .Include(r => r.Product)
+            .Where(r => !r.IsHidden && r.OrderItem.Order.OrderDetail != null);
+
+        // Filter by rating if provided
+        if (rating.HasValue)
+        {
+            query = query.Where(r => r.Rating == rating.Value);
+        }
+
+        var reviews = await query
+            .OrderByDescending(r => r.CreatedAt)
+            .Select(r => new ReviewDto
+            {
+                Id = r.Id,
+                CustomerId = r.CustomerId,
+                CustomerName = r.Customer.FullName ?? "Unknown",
+                CustomerAvatar = r.Customer.AvatarUrl ?? "",
+                ProductName = r.Product.Name,
+                OrderCode = r.OrderItem.Order.OrderCode,
+                Rating = r.Rating,
+                Comment = r.Comment,
+                CreatedAt = r.CreatedAt,
+                IsHidden = r.IsHidden
+            })
+            .ToListAsync();
+
+        return reviews;
+    }
 }
+

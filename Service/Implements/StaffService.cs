@@ -1,5 +1,6 @@
 using FoodDelivery.Common;
 using FoodDelivery.DTOs.Staff;
+using FoodDelivery.DTOs.Review;
 using FoodDelivery.Repositories.Interfaces;
 using FoodDelivery.Service.Interfaces;
 
@@ -42,6 +43,26 @@ public class StaffService : IStaffService
 
         var orders = await _staffRepository.GetPendingOrdersByRestaurant(staff.RestaurantId);
         return Result<List<OrderDto>>.Success(orders);
+    }
+
+    public async Task<Result<List<OrderDto>>> GetCompletedOrders(Guid userId, int days = 30)
+    {
+        var staff = await _staffRepository.GetStaffByUserId(userId);
+        if (staff == null)
+            return Result<List<OrderDto>>.Failure("STAFF_NOT_FOUND", "Staff profile not found");
+
+        var orders = await _staffRepository.GetCompletedOrdersByRestaurant(staff.RestaurantId, days);
+        return Result<List<OrderDto>>.Success(orders);
+    }
+
+    public async Task<Result<List<ReviewDto>>> GetRestaurantReviews(Guid userId, int? rating = null)
+    {
+        var staff = await _staffRepository.GetStaffByUserId(userId);
+        if (staff == null)
+            return Result<List<ReviewDto>>.Failure("STAFF_NOT_FOUND", "Staff profile not found");
+
+        var reviews = await _staffRepository.GetRestaurantReviewsAsync(staff.RestaurantId, rating);
+        return Result<List<ReviewDto>>.Success(reviews);
     }
 
     public async Task<Result<OrderDto>> GetOrderDetails(Guid userId, Guid orderId)

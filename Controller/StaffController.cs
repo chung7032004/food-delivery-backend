@@ -1,4 +1,5 @@
 using FoodDelivery.DTOs.Staff;
+using FoodDelivery.DTOs.Review;
 using FoodDelivery.Entities;
 using FoodDelivery.Extensions;
 using FoodDelivery.Service.Interfaces;
@@ -39,6 +40,30 @@ public class StaffController : ControllerBase
     {
         var userId = User.GetUserId();
         var result = await _staffService.GetOrdersForPreparation(userId);
+        
+        if (!result.IsSuccess)
+            return BadRequest(result);
+
+        return Ok(result);
+    }
+
+    [HttpGet("completed-orders")]
+    public async Task<IActionResult> GetCompletedOrders([FromQuery] int days = 30)
+    {
+        var userId = User.GetUserId();
+        var result = await _staffService.GetCompletedOrders(userId, days);
+        
+        if (!result.IsSuccess)
+            return BadRequest(result);
+
+        return Ok(result);
+    }
+
+    [HttpGet("reviews")]
+    public async Task<IActionResult> GetReviews([FromQuery] int? rating = null)
+    {
+        var userId = User.GetUserId();
+        var result = await _staffService.GetRestaurantReviews(userId, rating);
         
         if (!result.IsSuccess)
             return BadRequest(result);
