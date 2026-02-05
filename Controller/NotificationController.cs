@@ -18,9 +18,6 @@ public class NotificationController : ControllerBase
         _notificationService = notificationService;
     }
 
-    /// <summary>
-    /// Lấy danh sách thông báo của user
-    /// </summary>
     [HttpGet("")]
     public async Task<IActionResult> GetNotifications([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 20)
     {
@@ -33,9 +30,6 @@ public class NotificationController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>
-    /// Lấy danh sách thông báo chưa đọc
-    /// </summary>
     [HttpGet("unread")]
     public async Task<IActionResult> GetUnreadNotifications()
     {
@@ -48,9 +42,6 @@ public class NotificationController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>
-    /// Lấy số lượng thông báo chưa đọc
-    /// </summary>
     [HttpGet("unread-count")]
     public async Task<IActionResult> GetUnreadCount()
     {
@@ -63,9 +54,6 @@ public class NotificationController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>
-    /// Lấy chi tiết một thông báo
-    /// </summary>
     [HttpGet("{notificationId}")]
     public async Task<IActionResult> GetNotificationById([FromRoute] Guid notificationId)
     {
@@ -77,9 +65,6 @@ public class NotificationController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>
-    /// Tạo thông báo cho user (Admin only)
-    /// </summary>
     [HttpPost("")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> CreateNotification([FromBody] NotificationRequest request)
@@ -94,12 +79,9 @@ public class NotificationController : ControllerBase
         if (!result.IsSuccess)
             return BadRequest(result);
 
-        return CreatedAtAction(nameof(GetNotificationById), new { notificationId = result.Data.Id }, result);
+        return CreatedAtAction(nameof(GetNotificationById), new { notificationId = result.Data?.Id }, result);
     }
 
-    /// <summary>
-    /// Đánh dấu thông báo là đã đọc
-    /// </summary>
     [HttpPut("{notificationId}/read")]
     public async Task<IActionResult> MarkAsRead([FromRoute] Guid notificationId)
     {
@@ -111,9 +93,6 @@ public class NotificationController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>
-    /// Đánh dấu tất cả thông báo của user là đã đọc
-    /// </summary>
     [HttpPut("mark-all-read")]
     public async Task<IActionResult> MarkAllAsRead()
     {
@@ -126,9 +105,7 @@ public class NotificationController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>
-    /// Xóa thông báo
-    /// </summary>
+
     [HttpDelete("{notificationId}")]
     public async Task<IActionResult> DeleteNotification([FromRoute] Guid notificationId)
     {
