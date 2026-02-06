@@ -10,7 +10,10 @@ namespace FoodDelivery.Repositories.Implements
         public ShipperRepository(FoodContext context) { _context = context; }
 
         public async Task<OrderDetail?> GetOrderDetailByIdAsync(Guid orderId) => 
-            await _context.OrderDetails.FirstOrDefaultAsync(od => od.OrderId == orderId);
+            await _context.OrderDetails
+                .Include(od => od.Order)
+                    .ThenInclude(o => o.Customer)
+                .FirstOrDefaultAsync(od => od.OrderId == orderId);
 
         public void UpdateOrderDetail(OrderDetail orderDetail) => _context.OrderDetails.Update(orderDetail);
 
@@ -27,11 +30,17 @@ namespace FoodDelivery.Repositories.Implements
                 .Include(s => s.User)
                 .Include(s => s.Orders) // Đây là ICollection<OrderDetail>
                     .ThenInclude(o => o.Order) // Lấy thông tin bảng Order cha để có CreatedAt
+                    .ThenInclude(o => o.Customer) // Lấy Customer
                 .FirstOrDefaultAsync(s => s.UserId == userId);
         }
             
         public async Task<List<OrderStatusHistory>> GetShipperHistoryAsync(Guid userId) => 
-            await _context.OrderStatusHistories.Where(h => h.ChangeByUserId == userId).OrderByDescending(h => h.ChangedAt).ToListAsync();
+            await _context.OrderStatusHistories
+                .Include(h => h.Order)
+                    .ThenInclude(o => o.Customer)
+                .Where(h => h.ChangeByUserId == userId)
+                .OrderByDescending(h => h.ChangedAt)
+                .ToListAsync();
 
         public async Task<Role?> GetRoleByNameAsync(string roleName) => 
             await _context.Roles.FirstOrDefaultAsync(r => r.Name == roleName);

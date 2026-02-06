@@ -22,6 +22,7 @@ namespace FoodDelivery.Repositories.Implementations
                 .AsNoTracking()
                 .Include(u=>u.UserRoles)
                 .ThenInclude(ur=>ur.Role)
+                .Include(u => u.Shipper)
                 .FirstOrDefaultAsync(u=>u.Email == email);
         }
         public async Task<User?> GetByIdAsync(Guid id)
@@ -34,6 +35,8 @@ namespace FoodDelivery.Repositories.Implementations
                 .AsNoTracking()
                 .Include(u=>u.UserRoles)
                 .ThenInclude(ur =>ur.Role)
+                .Include(u => u.Shipper)
+                .Include(u => u.Orders.Take(1))
                 .FirstOrDefaultAsync(u=>u.Id == userId);
         }
         public async Task<bool> IsEmailExistsAsync(string email)
