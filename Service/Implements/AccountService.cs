@@ -29,6 +29,16 @@ public class AccountService : IAccountService
         // Get user roles
         var roles = user.UserRoles?.Select(ur => ur.Role?.Name ?? "").Where(r => !string.IsNullOrEmpty(r)).ToList() ?? new List<string>();
         
+        // If no explicit roles found, infer from relationships
+        if (roles.Count == 0)
+        {
+            if (user.Shipper != null)
+            {
+                roles.Add("Shipper");
+            }
+            // Can add more inferences here for other role types (Staff, Admin, etc.)
+        }
+        
         return Result<AccountResponse>.Success(new AccountResponse
         {
             AvatarUrl = avatarUrl,

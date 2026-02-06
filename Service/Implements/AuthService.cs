@@ -148,13 +148,38 @@ namespace FoodDelivery.Service.Implementations
                 new Claim(ClaimTypes.Email, user.Email),
                 new Claim("jti", Guid.NewGuid().ToString())// chống replay
             };
-            if(user.UserRoles != null)
+            
+            // Add explicit roles from UserRoles
+            var rolesAdded = false;
+            if(user.UserRoles != null && user.UserRoles.Count > 0)
             {
                 foreach(var userRole in user.UserRoles)
                 {
-                    claims.Add(new Claim(ClaimTypes.Role, userRole.Role.Name));
+                    if (userRole.Role != null && !string.IsNullOrEmpty(userRole.Role.Name))
+                    {
+                        claims.Add(new Claim(ClaimTypes.Role, userRole.Role.Name));
+                        rolesAdded = true;
+                        Console.WriteLine($"DEBUG - Added role from UserRoles: {userRole.Role.Name}");
+                    }
                 }
             }
+            
+            // If no explicit roles, infer from relationships
+            if (!rolesAdded)
+            {
+                if (user.Shipper != null)
+                {
+                    claims.Add(new Claim(ClaimTypes.Role, "Shipper"));
+                    Console.WriteLine("DEBUG - Added role from Shipper relationship: Shipper");
+                }
+            }
+            
+            Console.WriteLine($"DEBUG - Total claims in token: {claims.Count}");
+            foreach (var claim in claims)
+            {
+                Console.WriteLine($"  Claim: {claim.Type} = {claim.Value}");
+            }
+            
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_tokenSecretKey));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
             var token = new JwtSecurityToken(
