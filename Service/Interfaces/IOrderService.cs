@@ -19,4 +19,5 @@ public interface IOrderService
     Task<Result> MarkAsDeliveredAsync(Guid shipperId, Guid orderId);
     Task<Result> MarkPaymentCompleteAsync(Guid orderId);
     Task<Result> CancelOrderByAdminAsync(Guid adminId, Guid orderId, CancelOrderRequestDto request);
+    Task<Result> AssignShipperAsync(Guid adminId, Guid orderId, Guid shipperId);
 }

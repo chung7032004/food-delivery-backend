@@ -20,20 +20,44 @@ namespace FoodDelivery.DTOs
     {
         public Guid OrderId { get; set; }
         public string? OrderCode { get; set; }
-        public string? Status { get; set; }
-        public string? CustomerName { get; set; }
-        public string? PhoneNumber { get; set; }
-        public string? DeliveryAddress { get; set; }
-        public decimal TotalAmount { get; set; }
         public DateTime CreatedAt { get; set; }
+        public Guid CustomerId { get; set; }
+        public string? CustomerName { get; set; }
+        public string? CustomerEmail { get; set; }
+        public string? ShippingAddress { get; set; }
+        public string? ReceiverName { get; set; }
+        public string? ReceiverPhone { get; set; }
+        public decimal ShippingFee { get; set; }
+        public DateTime? EstimatedDeliveryTime { get; set; }
+        public DateTime? ActualDeliveryTime { get; set; }
+        public string? PaymentMethod { get; set; }
+        public string? PaymentStatus { get; set; }
+        public string? CurrentStatus { get; set; }
+        public string? CancelReason { get; set; }
+        public decimal TotalAmount { get; set; }
         public List<OrderItemDTO> Items { get; set; } = new();
+        public List<OrderStatusHistoryDTO> StatusHistories { get; set; } = new();
+        public Guid? ShipperId { get; set; }
     }
 
     public class OrderItemDTO
     {
-        public string? FoodName { get; set; }
+        public Guid? ProductId { get; set; }
+        public string? ProductName { get; set; }
+        public string? ProductImage { get; set; }
         public int Quantity { get; set; }
-        public decimal Price { get; set; }
+        public decimal UnitPrice { get; set; }
+        public decimal TotalPrice { get; set; }
+        public bool IsRemoved { get; set; }
+        public string? RemoveReason { get; set; }
+    }
+
+    public class OrderStatusHistoryDTO
+    {
+        public string? Status { get; set; }
+        public DateTime ChangedAt { get; set; }
+        public Guid ChangedBy { get; set; }
+        public string? Note { get; set; }
     }
 
     public class UpdateShipperProfileDto

@@ -321,4 +321,26 @@ public class OrdersController : ControllerBase
         }
         return Ok(result);
     }
+
+    [HttpPost("admin/orders/{orderId}/assign-shipper")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> AssignShipper(Guid orderId, [FromBody] AssignShipperRequestDto request)
+    {
+        if(!User.TryGetUserId(out Guid adminId))
+        {
+            return Unauthorized(Result.Failure("INVALID_TOKEN","Phiên dùng không hợp lệ."));
+        }
+        var result = await _orderService.AssignShipperAsync(adminId, orderId, request.ShipperId);
+        if (!result.IsSuccess)
+        {
+            return result.ErrorCode switch
+            {
+                "ORDER_NOT_FOUND" => NotFound(result),
+                "INVALID_STATUS" => BadRequest(result),
+                "INVALID_SHIPPER" => BadRequest(result),
+                _ => BadRequest(result)
+            };
+        }
+        return Ok(result);
+    }
 }

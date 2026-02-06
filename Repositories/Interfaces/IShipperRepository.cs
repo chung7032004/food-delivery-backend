@@ -11,8 +11,11 @@ namespace FoodDelivery.Repositories.Interfaces
         Task<List<User>> GetAllShippersAsync();
         Task<Shipper?> GetShipperByIdAsync(Guid userId);
         Task<List<OrderStatusHistory>> GetShipperHistoryAsync(Guid userId);
-        
-        
+        Task<List<OrderDetail>> GetShipperCompletedOrdersAsync(Guid shipperId);
+        Task<List<OrderDetail>> GetAvailableOrdersAsync();
+        Task AddShipperAsync(Shipper shipper);
+        Task<decimal> GetTodayEarningsAsync(Guid shipperId);
+        Task<decimal> GetTotalEarningsAsync(Guid shipperId);
         Task<Role?> GetRoleByNameAsync(string roleName);
         Task AddUserRoleAsync(UserRole userRole);
     }
