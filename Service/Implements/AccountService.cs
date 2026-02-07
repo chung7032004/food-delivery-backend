@@ -17,7 +17,7 @@ public class AccountService : IAccountService
     }
     public async Task <Result<AccountResponse>> GetAccountAsync(Guid userId)
     {
-        var user = await _userRepository.GetByIdAsync(userId);
+        var user = await _userRepository.GetUserByIdWithRoleAsync(userId);
         if(user == null)
         {
             return Result<AccountResponse>.Failure("USER_NOT_FOUND", "User không tồn tại");
@@ -25,6 +25,20 @@ public class AccountService : IAccountService
         var avatarUrl = string.IsNullOrWhiteSpace(user.AvatarUrl)
             ? "/uploads/avatars/default.png"
             : user.AvatarUrl;
+        
+        // Get user roles
+        var roles = user.UserRoles?.Select(ur => ur.Role?.Name ?? "").Where(r => !string.IsNullOrEmpty(r)).ToList() ?? new List<string>();
+        
+        // If no explicit roles found, infer from relationships
+        if (roles.Count == 0)
+        {
+            if (user.Shipper != null)
+            {
+                roles.Add("Shipper");
+            }
+            // Can add more inferences here for other role types (Staff, Admin, etc.)
+        }
+        
         return Result<AccountResponse>.Success(new AccountResponse
         {
             AvatarUrl = avatarUrl,
@@ -32,6 +46,7 @@ public class AccountService : IAccountService
             FullName = user.FullName,
             Id = user.Id,
             Phone = user.Phone,
+            Roles = roles,
         });
     }
     public async Task<Result> UpdateAccountAsync(Guid userId, AccountRequest accountRequest)

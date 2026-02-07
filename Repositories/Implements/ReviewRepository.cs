@@ -57,7 +57,7 @@ public class ReviewRepository : IReviewRepository
             .Include(r=>r.Customer)
             .OrderByDescending(r=>r.CreatedAt)
             .Skip((page-1)*pageSize)
-            .Take(page)
+            .Take(pageSize)
             .ToListAsync();
     }
     public async Task<int> TotalCountReviewByProductAsync(Guid productId)

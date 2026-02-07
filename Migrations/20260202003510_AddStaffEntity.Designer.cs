@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -10,9 +11,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FoodDelivery.Migrations
 {
     [DbContext(typeof(FoodContext))]
-    partial class FoodContextModelSnapshot : ModelSnapshot
+    [Migration("20260202003510_AddStaffEntity")]
+    partial class AddStaffEntity
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -65,7 +68,7 @@ namespace FoodDelivery.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Addresses", (string)null);
+                    b.ToTable("Addresses");
                 });
 
             modelBuilder.Entity("FoodDelivery.Entities.Cart", b =>
@@ -88,7 +91,7 @@ namespace FoodDelivery.Migrations
                     b.HasIndex("CustomerId")
                         .IsUnique();
 
-                    b.ToTable("Carts", (string)null);
+                    b.ToTable("Carts");
                 });
 
             modelBuilder.Entity("FoodDelivery.Entities.CartItem", b =>
@@ -119,7 +122,7 @@ namespace FoodDelivery.Migrations
                     b.HasIndex("CartId", "ProductId")
                         .IsUnique();
 
-                    b.ToTable("CartItems", (string)null);
+                    b.ToTable("CartItems");
                 });
 
             modelBuilder.Entity("FoodDelivery.Entities.Category", b =>
@@ -148,7 +151,7 @@ namespace FoodDelivery.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Categories", (string)null);
+                    b.ToTable("Categories");
                 });
 
             modelBuilder.Entity("FoodDelivery.Entities.Notification", b =>
@@ -188,7 +191,7 @@ namespace FoodDelivery.Migrations
                     b.HasIndex("UserId", "CreatedAt")
                         .IsDescending();
 
-                    b.ToTable("Notifications", (string)null);
+                    b.ToTable("Notifications");
                 });
 
             modelBuilder.Entity("FoodDelivery.Entities.Order", b =>
@@ -228,9 +231,6 @@ namespace FoodDelivery.Migrations
                     b.Property<decimal>("TotalAmount")
                         .HasColumnType("numeric");
 
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
                     b.HasKey("Id");
 
                     b.HasIndex("CustomerId");
@@ -238,7 +238,7 @@ namespace FoodDelivery.Migrations
                     b.HasIndex("OrderCode")
                         .IsUnique();
 
-                    b.ToTable("Orders", (string)null);
+                    b.ToTable("Orders");
                 });
 
             modelBuilder.Entity("FoodDelivery.Entities.OrderDetail", b =>
@@ -270,9 +270,6 @@ namespace FoodDelivery.Migrations
                     b.Property<int>("PaymentStatus")
                         .HasColumnType("integer");
 
-                    b.Property<int>("ReadyItemsCount")
-                        .HasColumnType("integer");
-
                     b.Property<Guid?>("ShipperId")
                         .HasColumnType("uuid");
 
@@ -288,7 +285,7 @@ namespace FoodDelivery.Migrations
 
                     b.HasIndex("ShipperId");
 
-                    b.ToTable("OrderDetails", (string)null);
+                    b.ToTable("OrderDetails");
                 });
 
             modelBuilder.Entity("FoodDelivery.Entities.OrderItem", b =>
@@ -327,7 +324,7 @@ namespace FoodDelivery.Migrations
 
                     b.HasIndex("OrderId");
 
-                    b.ToTable("OrderItems", (string)null);
+                    b.ToTable("OrderItems");
                 });
 
             modelBuilder.Entity("FoodDelivery.Entities.OrderStatusHistory", b =>
@@ -361,7 +358,46 @@ namespace FoodDelivery.Migrations
 
                     b.HasIndex("OrderId");
 
-                    b.ToTable("OrderStatusHistories", (string)null);
+                    b.ToTable("OrderStatusHistories");
+                });
+
+            modelBuilder.Entity("FoodDelivery.Entities.PasswordResetOtp", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<byte[]>("OtpHash")
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.Property<byte[]>("OtpSalt")
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.Property<int>("RetryCount")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExpiresAt");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("PasswordResetOtp");
                 });
 
             modelBuilder.Entity("FoodDelivery.Entities.Product", b =>
@@ -403,7 +439,7 @@ namespace FoodDelivery.Migrations
 
                     b.HasIndex("CategoryId");
 
-                    b.ToTable("Products", (string)null);
+                    b.ToTable("Products");
                 });
 
             modelBuilder.Entity("FoodDelivery.Entities.RefreshToken", b =>
@@ -435,7 +471,7 @@ namespace FoodDelivery.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("RefreshTokens", (string)null);
+                    b.ToTable("RefreshTokens");
                 });
 
             modelBuilder.Entity("FoodDelivery.Entities.RestaurantProfile", b =>
@@ -482,7 +518,7 @@ namespace FoodDelivery.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("RestaurantProfiles", (string)null);
+                    b.ToTable("RestaurantProfiles");
 
                     b.HasData(
                         new
@@ -490,14 +526,14 @@ namespace FoodDelivery.Migrations
                             Id = new Guid("11111111-1111-1111-1111-111111111111"),
                             Address = "319 Hùng Vương, P. Vĩnh Trung, Q. Thanh Khê, Đà Nẵng",
                             CloseTime = new TimeSpan(0, 22, 0, 0, 0),
-                            CreatedAt = new DateTime(2026, 2, 6, 13, 42, 48, 393, DateTimeKind.Utc).AddTicks(1367),
+                            CreatedAt = new DateTime(2026, 2, 2, 0, 35, 8, 66, DateTimeKind.Utc).AddTicks(5454),
                             IsOpen = true,
                             Latitude = 16.067771,
                             Longitude = 108.214287,
                             Name = "Food Delivery Shop",
                             OpenTime = new TimeSpan(0, 8, 0, 0, 0),
                             Phone = "0909123456",
-                            UpdatedAt = new DateTime(2026, 2, 6, 13, 42, 48, 393, DateTimeKind.Utc).AddTicks(1368)
+                            UpdatedAt = new DateTime(2026, 2, 2, 0, 35, 8, 66, DateTimeKind.Utc).AddTicks(5454)
                         });
                 });
 
@@ -538,7 +574,7 @@ namespace FoodDelivery.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("Reviews", (string)null);
+                    b.ToTable("Reviews");
                 });
 
             modelBuilder.Entity("FoodDelivery.Entities.Role", b =>
@@ -553,7 +589,7 @@ namespace FoodDelivery.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Roles", (string)null);
+                    b.ToTable("Roles");
                 });
 
             modelBuilder.Entity("FoodDelivery.Entities.Shipper", b =>
@@ -585,7 +621,41 @@ namespace FoodDelivery.Migrations
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("Shippers", (string)null);
+                    b.ToTable("Shippers");
+                });
+
+            modelBuilder.Entity("FoodDelivery.Entities.Staff", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Position")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("RestaurantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RestaurantId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Staff");
                 });
 
             modelBuilder.Entity("FoodDelivery.Entities.User", b =>
@@ -635,7 +705,7 @@ namespace FoodDelivery.Migrations
                     b.HasIndex("Email")
                         .IsUnique();
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("FoodDelivery.Entities.UserRole", b =>
@@ -650,7 +720,7 @@ namespace FoodDelivery.Migrations
 
                     b.HasIndex("RoleId");
 
-                    b.ToTable("UserRoles", (string)null);
+                    b.ToTable("UserRoles");
                 });
 
             modelBuilder.Entity("FoodDelivery.Entities.Address", b =>
@@ -771,6 +841,17 @@ namespace FoodDelivery.Migrations
                     b.Navigation("Order");
                 });
 
+            modelBuilder.Entity("FoodDelivery.Entities.PasswordResetOtp", b =>
+                {
+                    b.HasOne("FoodDelivery.Entities.User", "User")
+                        .WithMany("PasswordResetOtps")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("FoodDelivery.Entities.Product", b =>
                 {
                     b.HasOne("FoodDelivery.Entities.Category", "Category")
@@ -827,6 +908,25 @@ namespace FoodDelivery.Migrations
                         .HasForeignKey("FoodDelivery.Entities.Shipper", "UserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("FoodDelivery.Entities.Staff", b =>
+                {
+                    b.HasOne("FoodDelivery.Entities.RestaurantProfile", "Restaurant")
+                        .WithMany()
+                        .HasForeignKey("RestaurantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("FoodDelivery.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Restaurant");
 
                     b.Navigation("User");
                 });
@@ -904,6 +1004,8 @@ namespace FoodDelivery.Migrations
                     b.Navigation("OrderStatusHistories");
 
                     b.Navigation("Orders");
+
+                    b.Navigation("PasswordResetOtps");
 
                     b.Navigation("RefreshTokens");
 

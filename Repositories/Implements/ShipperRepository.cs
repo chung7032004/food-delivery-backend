@@ -39,7 +39,12 @@ namespace FoodDelivery.Repositories.Implements
         }
             
         public async Task<List<OrderStatusHistory>> GetShipperHistoryAsync(Guid userId) => 
-            await _context.OrderStatusHistories.Where(h => h.ChangeByUserId == userId).OrderByDescending(h => h.ChangedAt).ToListAsync();
+            await _context.OrderStatusHistories
+                .Include(h => h.Order)
+                    .ThenInclude(o => o.Customer)
+                .Where(h => h.ChangeByUserId == userId)
+                .OrderByDescending(h => h.ChangedAt)
+                .ToListAsync();
 
         public async Task<List<OrderDetail>> GetShipperCompletedOrdersAsync(Guid shipperId) =>
             await _context.OrderDetails

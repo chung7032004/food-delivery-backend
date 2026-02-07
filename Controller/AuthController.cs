@@ -13,9 +13,11 @@ namespace FoodDelivery.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
+    private readonly IEmailService _emailService;
 
-    public AuthController(IAuthService authService)
+    public AuthController(IAuthService authService, IEmailService emailService)
     {
+        _emailService = emailService;
         _authService = authService;
     }
     [HttpPost("register")]
@@ -83,6 +85,39 @@ public class AuthController : ControllerBase
         if (!result.IsSuccess)
         {
             return BadRequest(result);
+        }
+        return Ok(result);
+    }
+    [HttpPost("send-otp")]
+    public async Task<IActionResult> SendOtp([FromBody] SendOtpRequest request)
+    {
+        var result = await _authService.SendOtpAsync(request);
+        if (!result.IsSuccess)
+        {
+            return result.ErrorCode switch
+            {
+                "EMAIL_INVALID" =>BadRequest(result),
+                _ => StatusCode(500,result),
+            };
+        }
+        return Ok(result);
+    }
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+    {
+        var result = await _authService.ResetPasswordAsync(
+            request.Email, 
+            request.Otp, 
+            request.NewPassword
+        );
+        if (!result.IsSuccess)
+        {
+            return result.ErrorCode switch
+            {
+                "OTP_LOCKED" => StatusCode(StatusCodes.Status429TooManyRequests, result),
+                "OTP_EXPIRED" => BadRequest(result),
+                _ => BadRequest(result)
+            };
         }
         return Ok(result);
     }

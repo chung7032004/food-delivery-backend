@@ -8,6 +8,7 @@ using FoodDelivery.Entities;
 using FoodDelivery.Repositories;
 using FoodDelivery.Repositories.Interfaces;
 using FoodDelivery.Service.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 namespace FoodDelivery.Service.Implementations
 {
@@ -18,13 +19,22 @@ namespace FoodDelivery.Service.Implementations
         private readonly IRefreshTokenRepository _refreshTokenRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly string _tokenSecretKey;
-        public AuthService(IUserRepository userRepository, IRefreshTokenRepository refreshTokenRepository,IRoleRepository roleRepository,IUnitOfWork unitOfWork, IConfiguration configuration)
+        private readonly IEmailService _emailService;
+        private readonly IPasswordResetOtpRepository _passwordResetOtpRepository;
+        private readonly ILogger<AuthService> _logger;
+        public AuthService(IUserRepository userRepository, IRefreshTokenRepository refreshTokenRepository,
+                            IRoleRepository roleRepository,IUnitOfWork unitOfWork, IConfiguration configuration,
+                            IEmailService emailService, IPasswordResetOtpRepository passwordResetOtpRepository,
+                            ILogger<AuthService> logger)
         {
             _userRepository = userRepository;
             _refreshTokenRepository = refreshTokenRepository;
             _tokenSecretKey = configuration["TokenSecretKey"] ?? "default_secret_key_2025_food_delivery";
             _unitOfWork = unitOfWork;
             _roleRepository = roleRepository;
+            _emailService = emailService;
+            _passwordResetOtpRepository = passwordResetOtpRepository;
+            _logger = logger;
         }
         public async Task <Result> RegisterUserAsync(string email, string password, string fullName, string phone)
         {
@@ -106,6 +116,10 @@ namespace FoodDelivery.Service.Implementations
                 CreatedAt = DateTime.UtcNow,
                 IsRevoked = false, 
             };
+            
+            // Cập nhật LastLogin khi đăng nhập thành công
+            await _userRepository.UpdateLastLoginAsync(user.Id);
+            
             await _refreshTokenRepository.AddAsync(refresh);
             await _unitOfWork.SaveChangesAsync();
             return Result<LoginResponse>.Success(new LoginResponse
@@ -134,13 +148,38 @@ namespace FoodDelivery.Service.Implementations
                 new Claim(ClaimTypes.Email, user.Email),
                 new Claim("jti", Guid.NewGuid().ToString())// chống replay
             };
-            if(user.UserRoles != null)
+            
+            // Add explicit roles from UserRoles
+            var rolesAdded = false;
+            if(user.UserRoles != null && user.UserRoles.Count > 0)
             {
                 foreach(var userRole in user.UserRoles)
                 {
-                    claims.Add(new Claim(ClaimTypes.Role, userRole.Role.Name));
+                    if (userRole.Role != null && !string.IsNullOrEmpty(userRole.Role.Name))
+                    {
+                        claims.Add(new Claim(ClaimTypes.Role, userRole.Role.Name));
+                        rolesAdded = true;
+                        Console.WriteLine($"DEBUG - Added role from UserRoles: {userRole.Role.Name}");
+                    }
                 }
             }
+            
+            // If no explicit roles, infer from relationships
+            if (!rolesAdded)
+            {
+                if (user.Shipper != null)
+                {
+                    claims.Add(new Claim(ClaimTypes.Role, "Shipper"));
+                    Console.WriteLine("DEBUG - Added role from Shipper relationship: Shipper");
+                }
+            }
+            
+            Console.WriteLine($"DEBUG - Total claims in token: {claims.Count}");
+            foreach (var claim in claims)
+            {
+                Console.WriteLine($"  Claim: {claim.Type} = {claim.Value}");
+            }
+            
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_tokenSecretKey));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
             var token = new JwtSecurityToken(
@@ -235,6 +274,96 @@ namespace FoodDelivery.Service.Implementations
             var newPasswordHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(changePasswordRequest.NewPassword));
             await _userRepository.ChangePasswordAsync(userId,newPasswordHash,newPasswordSalt);
             return Result.Success();
+        }
+        public async Task<Result> SendOtpAsync (SendOtpRequest request)
+        {
+            try
+            {
+                var user = await _userRepository.GetByEmailAsync(request.Email);
+                if(user == null)
+                {
+                    return Result.Failure("EMAIL_INVALID","Không tồn tại tài khoảng.");
+                }
+                var oldOpts = await _passwordResetOtpRepository.GetAllByUserId(user.Id);
+                await _passwordResetOtpRepository.DeleteRangeAsync(oldOpts);
+                var otp = new Random().Next(100000,999999).ToString();
+                var hmac = new HMACSHA512();
+                var otpHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(otp));
+                var reset = new PasswordResetOtp{
+                    UserId = user.Id,
+                    Email = user.Email,
+                    OtpHash = otpHash,
+                    OtpSalt = hmac.Key,
+                    ExpiresAt = DateTime.UtcNow.AddMinutes(10),
+                    RetryCount = 0
+                };
+                await _passwordResetOtpRepository.AddAsync(reset);
+                await _unitOfWork.SaveChangesAsync();
+                try{
+                await _emailService.SendOtpEmailAsync(request.Email,otp);
+                }
+                catch(Exception ex)
+                {
+                    _logger.LogError(ex, "Lỗi gửi email OTP cho {Email}", request.Email);
+                    return Result.Failure("EMAIL_SERVICE_ERROR", "Không thể gửi email lúc này. Vui lòng thử lại sau.");
+                }
+                return Result.Success();
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Lỗi Database khi lưu OTP cho {Email}", request.Email);
+                return Result.Failure("DATABASE_ERROR", "Lỗi hệ thống khi xử lý yêu cầu.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi không xác định trong SendOtpAsync cho {Email}", request.Email);
+                return Result.Failure("SERVER_ERROR", "Đã xảy ra lỗi ngoài ý muốn.");
+            }
+        }
+        public async Task<Result> ResetPasswordAsync(string email, string otp, string newPassword)
+        {
+            try{
+                var record = await _passwordResetOtpRepository.GetByEmailAsync(email);
+                if(record == null)
+                {
+                    return Result.Failure("OTP_INVALID","Yêu cầu khôi phục không tồn tại");
+                }
+                if (record.RetryCount >= 5)
+                {
+                    //Nếu sai quá nhiều, xóa luôn OTP để bắt người dùng tạo yêu cầu mới
+                    await _passwordResetOtpRepository.DeleteAsync(record);
+                    await _unitOfWork.SaveChangesAsync();
+                    return Result.Failure("OTP_LOCKED", "Bạn đã nhập sai quá nhiều lần. Vui lòng yêu cầu mã mới.");
+                }
+                if(record.ExpiresAt  < DateTime.UtcNow)
+                {
+                    return Result.Failure("OTP_EXPIRED", "Mã OTP đã hết hạn.");
+                }
+                if(!VerifyPasswordHash(otp, record.OtpHash, record.OtpSalt))
+                {
+                    record.RetryCount++;
+                    await _unitOfWork.SaveChangesAsync();
+                    return Result.Failure("OTP_INVALID","OTP không đúng.");
+                }
+                var hmac = new HMACSHA512();
+                await _refreshTokenRepository.RevokeAllAsync(record.UserId);
+                var newPasswordSalt = hmac.Key;
+                var newPasswordHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(newPassword));
+                await _userRepository.ChangePasswordAsync(record.UserId,newPasswordHash,newPasswordSalt);
+                await _passwordResetOtpRepository.DeleteAsync(record);
+                await _unitOfWork.SaveChangesAsync();
+                return Result.Success();
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Lỗi Database khi cập nhật mật khẩu");
+                return Result.Failure("DATABASE_ERROR", "Lỗi hệ thống khi xử lý yêu cầu.");
+            }
+            catch(Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi không xác định {ex}",ex);
+                return Result.Failure("SERVER_ERROR", "Đã xảy ra lỗi ngoài ý muốn.");
+            }
         }
     }
 }

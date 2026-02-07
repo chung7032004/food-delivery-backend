@@ -266,6 +266,35 @@ public class OrderService :IOrderService
                     Console.WriteLine($"[Notification] Successfully sent to admin {admin.Email}");
                 }
             }
+
+            // 📢 Send notification to all active staff about new order
+            var staffMembers = await _context.Staff
+                .Include(s => s.User)
+                .Where(s => s.IsActive)
+                .ToListAsync();
+            
+            Console.WriteLine($"[Notification] Found {staffMembers.Count} active staff member(s)");
+            
+            foreach (var staff in staffMembers)
+            {
+                Console.WriteLine($"[Notification] Sending to staff: {staff.UserId} ({staff.User?.Email})");
+                var notificationRequest = new NotificationRequest
+                {
+                    Title = "Đơn hàng mới cần xử lý",
+                    Message = $"Khách hàng vừa đặt đơn #{order.OrderCode}. Tổng tiền: {order.TotalAmount:N0} VND",
+                    Type = (int)NotificationType.ORDER,
+                    Link = $"/staff/orders?search={order.OrderCode}"
+                };
+                var result = await _notificationService.CreateNotificationAsync(staff.UserId, notificationRequest);
+                if (!result.IsSuccess)
+                {
+                    Console.WriteLine($"[Notification] Failed to send to staff: {result.Message}");
+                }
+                else
+                {
+                    Console.WriteLine($"[Notification] Successfully sent to staff {staff.User?.Email}");
+                }
+            }
         }
         catch (Exception ex)
         {
@@ -347,6 +376,7 @@ public class OrderService :IOrderService
         {
             response.Items.Add(new OrderItemResponse
             {
+                OrderItemId = item.Id,
                 ProductId = item.ProductId,
                 ProductName = item.ProductName ?? string.Empty,
                 ProductImage  = item.ProductImage ?? string.Empty,

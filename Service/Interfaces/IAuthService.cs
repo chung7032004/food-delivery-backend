@@ -10,5 +10,7 @@ namespace FoodDelivery.Service.Interfaces
         Task <Result<RefreshTokenResponse>> RefreshAccessTokenAsync(string refreshToken);
         Task <Result> LogoutAsync (Guid userId,string refreshToken);
         Task <Result> ChangePasswordAsync (Guid userId,ChangePasswordRequest changePasswordRequest);
+        Task<Result> SendOtpAsync (SendOtpRequest request);
+        Task<Result> ResetPasswordAsync(string email, string otp, string newPassword);
     }
 }
