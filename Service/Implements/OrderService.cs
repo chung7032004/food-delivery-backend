@@ -16,6 +16,7 @@ public class OrderService :IOrderService
     private readonly IRestaurantRepository _restaurantRepository;
     private readonly INotificationService _notificationService;
     private readonly IUserRepository _userRepository;
+    private readonly IShipperRepository _shipperRepository;
     private readonly FoodContext _context;
     public OrderService (
         IProductRepository productRepo,
@@ -25,6 +26,7 @@ public class OrderService :IOrderService
         IRestaurantRepository restaurantRepository,
         INotificationService notificationService,
         IUserRepository userRepository,
+        IShipperRepository shipperRepository,
         FoodContext context)
     {
         _productRepository = productRepo;
@@ -35,6 +37,7 @@ public class OrderService :IOrderService
         _restaurantRepository = restaurantRepository;
         _notificationService = notificationService;
         _userRepository = userRepository;
+        _shipperRepository = shipperRepository;
     }
     public async Task<Result<CreateOrderResponseDto>> BuyNowAsync(Guid customerId,BuyNowRequestDto request)
     {
@@ -737,6 +740,20 @@ public class OrderService :IOrderService
             return Result.Failure("INVALID_STATUS", "Đơn hàng chưa được nấu xong hoặc đang ở trạng thái khác.");
         }
         order.OrderDetail.Status = OrderStatus.ReadyForPickup;
+        
+        // 🚚 Auto-assign an available shipper
+        var availableShipperId = await FindAvailableShipperAsync();
+        Guid? shipperUserId = null;
+        if (availableShipperId.HasValue)
+        {
+            order.OrderDetail.ShipperId = availableShipperId.Value;
+            // Get the Shipper entity to retrieve UserId for notification
+            var shipper = await _context.Shippers
+                .Include(s => s.User)
+                .FirstOrDefaultAsync(s => s.Id == availableShipperId.Value);
+            shipperUserId = shipper?.UserId;
+        }
+
         var history = new OrderStatusHistory
         {
             ActionBy = OrderActionBy.Admin,
@@ -764,6 +781,26 @@ public class OrderService :IOrderService
         catch (Exception ex)
         {
             Console.WriteLine($"Error sending notification: {ex.Message}");
+        }
+
+        // 📢 Send notification to shipper if assigned
+        if (shipperUserId.HasValue)
+        {
+            try
+            {
+                var notificationRequest = new NotificationRequest
+                {
+                    Title = "Đơn hàng được phân công",
+                    Message = $"Bạn được phân công giao đơn #{order.OrderCode} cho {order.Customer?.FullName ?? "Khách hàng"}. Tổng tiền: {order.TotalAmount:N0} VND",
+                    Type = (int)NotificationType.DELIVERY,
+                    Link = $"/shipper/orders/{orderId}"
+                };
+                await _notificationService.CreateNotificationAsync(shipperUserId.Value, notificationRequest);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error sending notification to shipper: {ex.Message}");
+            }
         }
 
         return Result.Success();
@@ -888,6 +925,68 @@ public class OrderService :IOrderService
         }
 
         return Result.Success();
+    }
+
+    public async Task<Result> AssignShipperAsync(Guid adminId, Guid orderId, Guid shipperId)
+    {
+        var order = await _orderRepository.GetOrderById(orderId);
+        if (order == null)
+        {
+            return Result.Failure("ORDER_NOT_FOUND", "Không tìm thấy đơn hàng.");
+        }
+
+        if (order.OrderDetail.Status != OrderStatus.ReadyForPickup)
+        {
+            return Result.Failure("INVALID_STATUS", "Đơn hàng phải ở trạng thái 'Chờ Shipper' mới có thể phân công.");
+        }
+
+        // Verify shipper exists and has appropriate role
+        var shipperUser = await _userRepository.GetUserByIdWithRoleAsync(shipperId);
+        var hasShipperRole = shipperUser?.UserRoles.Any(r => r.Role.Name == "Shipper") ?? false;
+        if (!hasShipperRole)
+        {
+            return Result.Failure("INVALID_SHIPPER", "Người dùng này không phải là Shipper.");
+        }
+
+        // Get Shipper entity by UserId to get the correct Shipper.Id for FK
+        var shipper = await _shipperRepository.GetShipperByIdAsync(shipperId);
+        if (shipper == null)
+        {
+            return Result.Failure("SHIPPER_NOT_FOUND", "Không tìm thấy hồ sơ shipper.");
+        }
+
+        order.OrderDetail.ShipperId = shipper.Id;
+        await _context.SaveChangesAsync();
+
+        // 📢 Send notification to shipper: Order assigned
+        try
+        {
+            var notificationRequest = new NotificationRequest
+            {
+                Title = "Đơn hàng được phân công",
+                Message = $"Bạn được phân công giao đơn #{order.OrderCode} cho {order.Customer?.FullName ?? "Khách hàng"}. Tổng tiền: {order.TotalAmount:N0} VND",
+                Type = (int)NotificationType.DELIVERY,
+                Link = $"/shipper/orders/{orderId}"
+            };
+            await _notificationService.CreateNotificationAsync(shipperId, notificationRequest);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error sending notification to shipper: {ex.Message}");
+        }
+
+        return Result.Success();
+    }
+
+    private async Task<Guid?> FindAvailableShipperAsync()
+    {
+        // Get all active shippers and return the first one
+        // In a real implementation, you might want to consider shipper location, current load, etc.
+        var shipper = await _context.Shippers
+            .Include(s => s.User)
+            .Where(s => s.IsActive && s.User.IsActive)
+            .FirstOrDefaultAsync();
+        return shipper?.Id;
     }            
     //tiệm đóng cửa
 }

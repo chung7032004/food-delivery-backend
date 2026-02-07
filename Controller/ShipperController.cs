@@ -58,8 +58,22 @@ namespace FoodDelivery.Controllers
         [Authorize(Roles = "Shipper")]
         public async Task<IActionResult> GetOrderById(Guid orderId)
         {
+            var userId = HttpContext.User.GetUserId();
             var order = await _service.GetOrderByIdAsync(orderId);
             if (order == null) return NotFound(new { message = "Không tìm thấy chi tiết đơn hàng" });
+            
+            // Get shipper to check ownership
+            var shipper = await _service.GetShipperByIdAsync(userId);
+            if (shipper == null) return Forbid();
+            
+            // Allow viewing if:
+            // 1. Order is available (no shipper assigned yet) AND status is ReadyForPickup
+            // 2. OR shipper owns the order
+            bool canView = (order.ShipperId == null || order.ShipperId == Guid.Empty) 
+                        || order.ShipperId == shipper.Id;
+                        
+            if (!canView) return Forbid("Bạn không có quyền xem đơn hàng này");
+            
             return Ok(order);
         }
 
@@ -79,8 +93,9 @@ namespace FoodDelivery.Controllers
         [Authorize(Roles = "Shipper")]
         public async Task<IActionResult> Success(Guid orderId)
         {
-            var ok = await _service.MarkSuccessAsync(orderId);
-            if (!ok) return BadRequest(new { message = "Không thể cập nhật trạng thái thành công." });
+            var userId = HttpContext.User.GetUserId();
+            var ok = await _service.MarkSuccessAsync(orderId, userId);
+            if (!ok) return BadRequest(new { message = "Không thể cập nhật trạng thái thành công. Kiểm tra quyền truy cập đơn hàng." });
             return Ok(new { message = "Đã cập nhật: Giao hàng thành công" });
         }
 
@@ -126,9 +141,15 @@ namespace FoodDelivery.Controllers
         }
 
         [HttpGet("history/{userId}")]
+        [Authorize(Roles = "Admin,Shipper")]
         public async Task<IActionResult> GetHistory(Guid userId)
         {
-            var result = await _service.GetShipperHistoryAsync(userId);
+            var requesterId = HttpContext.User.GetUserId();
+            var requesterRole = HttpContext.User.FindFirst("http://schemas.microsoft.com/ws/2008/06/identity/claims/role")?.Value;
+            // Shipper chỉ xem được history của chính mình, Admin xem được tất cả
+            if (requesterRole != "Admin" && requesterId != userId)
+                return Forbid("Bạn không có quyền xem lịch sử này");
+            var result = await _service.GetShipperCompletedOrdersAsync(userId);
             return Ok(result);
         }
 
@@ -149,6 +170,44 @@ namespace FoodDelivery.Controllers
             var ok = await _service.UpdateShipperProfileAsync(userId, request);
             if (!ok) return BadRequest(new { message = "Cập nhật profile thất bại" });
             return Ok(new { message = "Cập nhật profile thành công" });
+        }
+
+        // Lấy danh sách các đơn hàng sẵn sàng để nhận
+        [HttpGet("available-orders")]
+        [Authorize(Roles = "Shipper")]
+        public async Task<IActionResult> GetAvailableOrders()
+        {
+            try
+            {
+                var orders = await _service.GetAvailableOrdersAsync();
+                return Ok(orders);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = "Lỗi lấy danh sách đơn hàng sẵn sàng: " + ex.Message });
+            }
+        }
+
+        // Shipper chấp nhận/nhận một đơn hàng
+        [HttpPost("accept-order/{orderId}")]
+        [Authorize(Roles = "Shipper")]
+        public async Task<IActionResult> AcceptOrder(Guid orderId)
+        {
+            try
+            {
+                var userId = HttpContext.User.GetUserId();
+                // AcceptOrderAsync now throws InvalidOperationException with reason when it fails
+                await _service.AcceptOrderAsync(orderId, userId);
+                return Ok(new { message = "Đã nhận đơn hàng thành công" });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = "Lỗi nhận đơn hàng: " + ex.Message });
+            }
         }
 
         #endregion
